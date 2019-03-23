@@ -1,10 +1,11 @@
 import re
 import sys
 
-
-tempFrame = {}
 frame = "G"
 globalFrame = {}
+tempFrame = None
+localFrame = None
+dataStack = []
 labels = {}
 
 
@@ -116,16 +117,54 @@ def move(instruct, interpret):
             else:
                 globalFrame.update({instruct.args[0].name[3:]: instruct.args[1].name})
 
+
 def createframe(instruct, interpret):
-    check_num(len(instruct.args), 0)
+    global tempFrame, frame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret == 1:
+        # if the temporary frame is not initialised
+        if tempFrame is None:
+            tempFrame = {}
+        # if it was already initialised
+        else:
+            tempFrame.clear()
+        # set the current frame to temporary
+        frame = "T"
 
 
 def pushframe(instruct, interpret):
-    check_num(len(instruct.args), 0)
+    global tempFrame, localFrame, frame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret == 1:
+        # if the temporary frame wan't initialised
+        if tempFrame is None:
+            quit(55)
+        # if the local frame wasn't initialised
+        elif localFrame is None:
+            localFrame = []
+        # add the current temporary frame to the top of the local frame stack and destroy the temporary frame
+        localFrame.append(tempFrame)
+        tempFrame.clear()
+        tempFrame = None
+        # set the current frame to global
+        frame = "G"
 
 
 def popframe(instruct, interpret):
-    check_num(len(instruct.args), 0)
+    global tempFrame, localFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret == 1:
+        # if the local frame isn't initialised
+        if localFrame is None or not localFrame or tempFrame is None:
+            quit(55)
+        # pop the top frame from the local frame stack into the temporary frame
+        tempFrame = localFrame.pop()
 
 
 def defvar(instruct, interpret):
@@ -140,11 +179,8 @@ def defvar(instruct, interpret):
         # if the variable is supposed to be in the global frame
         if re.match(r"^(GF@).*$@", instruct.args[0].name):
             globalFrame.update({instruct.args[0].name[3:]: None})
-        # if the variable is supposed to be in the local frame and the current frame is local
-        elif re.match(r"^(LF@).*$", instruct.args[0].name) and frame == "L":
-            print("LF")
         # if the variable is supposed to be in the temporary frame and the current frame is temporary
-        elif re.match(r"^(TF@).*$", instruct.args[0].name) and frame == "T":
+        elif frame == "T" and re.match(r"^(TF@).*$", instruct.args[0].name):
             tempFrame.update({instruct.args[0].name[3:]: None})
         # if the variable is badly defined
         else:
@@ -163,17 +199,50 @@ def _return(instruct, interpret):
 
 
 def pushs(instruct, interpret):
-    check_num(len(instruct.args), 1)
-    vars = ['symb']
-    check_vars(vars, instruct.args)
-    check_data(instruct.args)
+    global dataStack, globalFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 1)
+        vars = ['symb']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+    elif interpret == 1:
+        # if the symbol is a variable in the correct frame
+        if instruct.args[0].type == "var" and instruct.args[0].name[3:] in globalFrame:
+            dataStack.append(globalFrame[instruct.args[0].name[3:]])
+        # if the symbol is a variable but isn't in the correct frame
+        elif instruct.args[0].type == "var":
+            quit(54)
+        # if the symbol isn't a variable
+        else:
+            dataStack.append(instruct.args[0].name)
 
 
 def pops(instruct, interpret):
-    check_num(len(instruct.args), 1)
-    vars = ['var']
-    check_vars(vars, instruct.args)
-    check_data(instruct.args)
+    global dataStack, globalFrame, tempFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 1)
+        vars = ['var']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+    elif interpret == 1:
+        # if the data stack is empty
+        if not dataStack:
+            quit(56)
+        else:
+            # if the variable belongs to the temporary frame and the temporary frame exists
+            if re.match(r"^TF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+                tempFrame.update({instruct.args[0].name[3:]: dataStack.pop()})
+            # if the variable belongs to the temporary frame and the temporary frame doesn't exist
+            elif re.match(r"^TF@$", instruct.args[0].name[0:3]) and tempFrame is None:
+                quit(55)
+            # if the variable belongs to the global frame
+            elif re.match(r"^GF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
+                globalFrame.update({instruct.args[0].name[3:]: dataStack.pop()})
+            # if there is no such variable defined in any frame
+            else:
+                quit(54)
 
 
 def add(instruct, interpret):
@@ -187,7 +256,7 @@ def add(instruct, interpret):
     elif interpret == 1:
         symb1 = None
         symb2 = None
-        if frame == "G" and instruct.args[0].name[3:] in globalFrame:
+        if re.match(r"^GF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
             # if the first symbol is a variable in the correct frame
             if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
                 # if the symbol is an integer
