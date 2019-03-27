@@ -17,6 +17,7 @@ nazvy instrukcii
 nazvy argumentov
 '''
 
+
 # class for storing the information about an instruction
 class Instruction:
     def __init__(self, order, opcode, Argument):
@@ -24,12 +25,14 @@ class Instruction:
         self.opcode = opcode
         self.args = Argument
 
+
 # class for storing the information about the arguments of an instruction
 class Argument:
     def __init__(self, num, type, name=None):
         self.num = num
         self.type = type
         self.name = name
+
 
 # global variables
 source = "stdin"
@@ -44,10 +47,7 @@ stats = None
 global_frame = {}
 temp_frame = {}
 frame = "G"
-instruct_names = ['MOVE', 'CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'DEFVAR', 'CALL', 'RETURN', 'PUSHS', 'POPS',
-                  'ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR', 'NOT', 'INT2CHAR', 'STRI2INT',
-                  'READ', 'WRITE', 'CONCAT', 'STRLEN', 'GETCHAR', 'SETCHAR', 'TYPE', 'LABEL', 'JUMP', 'JUMPIFEQ',
-                  'JUMPIFNEQ', 'EXIT', 'DPRINT', 'BREAK']
+
 
 # function for parsing the arguments
 def check_argv():
@@ -134,6 +134,7 @@ def check_xml():
         instruction_list.append(Instruction(instruct.get('order'), instruct.get('opcode'), argument_list))
         argument_list = []
 
+
 # checks instructions for errors
 def parse_instruction(interpret):
     global instruction_list, argument_list, global_frame, temp_frame, frame
@@ -215,6 +216,7 @@ def parse_instruction(interpret):
             # mistake in instruction name
             exit(32)
 
+
 # function for parsing the xml input
 def interpret():
     global source, input, source_file, input_file
@@ -242,6 +244,7 @@ def interpret():
     parse_instruction(0)
     # calling the function to interpret the instructions
     parse_instruction(1)
+
 
 # calling the function to parse the input arguments
 check_argv()

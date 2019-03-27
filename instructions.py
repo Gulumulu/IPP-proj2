@@ -4,15 +4,15 @@ import sys
 frame = "G"
 globalFrame = {}
 tempFrame = None
-localFrame = None
+localFrame = [{}]
 dataStack = []
 labels = {}
-
 
 '''
 TODO
 local and temporary dictionaries
 '''
+
 
 # checks the number of arguments of an instruction
 def check_num(args, num):
@@ -98,7 +98,7 @@ def print_out(text, out):
 
 
 def move(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 2)
@@ -106,20 +106,70 @@ def move(instruct, interpret):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret == 1:
-        if frame == "G" and instruct.args[0].name[3:] in globalFrame:
-            # if the symbol is a variable in the correct frame
-            if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
+        # if the variable is in the global frame
+        if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
+            # if the symbol is a variable in the global frame
+            if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in globalFrame:
                 globalFrame.update({instruct.args[0].name[3:]: globalFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the temporary frame
+            elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in tempFrame:
+                globalFrame.update({instruct.args[0].name[3:]: tempFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the local frame
+            elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in localFrame[-1]:
+                globalFrame.update({instruct.args[0].name[3:]: localFrame[-1][instruct.args[1].name[3:]]})
             # if the symbol is a variable but isn't in the correct frame
             elif instruct.args[1].type == "var":
                 quit(54)
             # if the symbol is not a variable
             else:
                 globalFrame.update({instruct.args[0].name[3:]: instruct.args[1].name})
+        # if the variable is in the temporary frame
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+            # if the symbol is a variable in the global frame
+            if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in globalFrame:
+                tempFrame.update({instruct.args[0].name[3:]: globalFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the temporary frame
+            elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in tempFrame:
+                tempFrame.update({instruct.args[0].name[3:]: tempFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the local frame
+            elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in localFrame[-1]:
+                tempFrame.update({instruct.args[0].name[3:]: localFrame[-1][instruct.args[1].name[3:]]})
+            # if the symbol is a variable but isn't in the correct frame
+            elif instruct.args[1].type == "var":
+                quit(54)
+            # if the symbol is not a variable
+            else:
+                tempFrame.update({instruct.args[0].name[3:]: instruct.args[1].name})
+        # if the variable is in the local frame
+        elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[1].name[3:] in localFrame[-1]:
+            # if the symbol is a variable in the global frame
+            if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in globalFrame:
+                localFrame[-1].update({instruct.args[0].name[3:]: globalFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the temporary frame
+            elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in tempFrame:
+                localFrame[-1].update({instruct.args[0].name[3:]: tempFrame[instruct.args[1].name[3:]]})
+            # if the symbol is a variable in the local frame
+            elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                    and instruct.args[1].name[3:] in localFrame[-1]:
+                localFrame[-1].update({instruct.args[0].name[3:]: localFrame[-1][instruct.args[1].name[3:]]})
+            # if the symbol is a variable but isn't in the correct frame
+            elif instruct.args[1].type == "var":
+                quit(54)
+            # if the symbol is not a variable
+            else:
+                localFrame[-1].update({instruct.args[0].name[3:]: instruct.args[1].name})
 
 
 def createframe(instruct, interpret):
-    global tempFrame, frame
+    global tempFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 0)
@@ -130,12 +180,10 @@ def createframe(instruct, interpret):
         # if it was already initialised
         else:
             tempFrame.clear()
-        # set the current frame to temporary
-        frame = "T"
 
 
 def pushframe(instruct, interpret):
-    global tempFrame, localFrame, frame
+    global tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 0)
@@ -143,15 +191,10 @@ def pushframe(instruct, interpret):
         # if the temporary frame wan't initialised
         if tempFrame is None:
             quit(55)
-        # if the local frame wasn't initialised
-        elif localFrame is None:
-            localFrame = []
         # add the current temporary frame to the top of the local frame stack and destroy the temporary frame
         localFrame.append(tempFrame)
         tempFrame.clear()
         tempFrame = None
-        # set the current frame to global
-        frame = "G"
 
 
 def popframe(instruct, interpret):
@@ -168,7 +211,7 @@ def popframe(instruct, interpret):
 
 
 def defvar(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 1)
@@ -177,8 +220,11 @@ def defvar(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # if the variable is supposed to be in the global frame
-        if re.match(r"^(GF@).*$@", instruct.args[0].name):
+        if re.match(r"^(GF@).*$", instruct.args[0].name):
             globalFrame.update({instruct.args[0].name[3:]: None})
+        # if the variable is supposed to be in the local stack frame
+        elif re.match(r"^(LF@).*$", instruct.args[0].name):
+            localFrame[-1].update({instruct.args[0].name[3:]: None})
         # if the variable is supposed to be in the temporary frame and the current frame is temporary
         elif frame == "T" and re.match(r"^(TF@).*$", instruct.args[0].name):
             tempFrame.update({instruct.args[0].name[3:]: None})
@@ -188,18 +234,20 @@ def defvar(instruct, interpret):
 
 
 def call(instruct, interpret):
-    check_num(len(instruct.args), 1)
-    vars = ['label']
-    check_vars(vars, instruct.args)
-    check_data(instruct.args)
+    if interpret == 0:
+        check_num(len(instruct.args), 1)
+        vars = ['label']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
 
 
 def _return(instruct, interpret):
-    check_num(len(instruct.args), 0)
+    if interpret == 0:
+        check_num(len(instruct.args), 0)
 
 
 def pushs(instruct, interpret):
-    global dataStack, globalFrame
+    global dataStack, globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 1)
@@ -207,9 +255,18 @@ def pushs(instruct, interpret):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret == 1:
-        # if the symbol is a variable in the correct frame
-        if instruct.args[0].type == "var" and instruct.args[0].name[3:] in globalFrame:
+        # if the symbol is a variable in the global frame
+        if instruct.args[0].type == "var" and re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) \
+                and instruct.args[0].name[3:] in globalFrame:
             dataStack.append(globalFrame[instruct.args[0].name[3:]])
+        # if the symbol is a variable in the temporary frame
+        elif instruct.args[0].type == "var" and re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) \
+                and instruct.args[0].name[3:] in tempFrame:
+            dataStack.append(tempFrame[instruct.args[0].name[3:]])
+        # if the symbol is a variable in the local frame
+        elif instruct.args[0].type == "var" and re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) \
+                and instruct.args[0].name[3:] in localFrame[-1]:
+            dataStack.append(localFrame[-1][instruct.args[0].name[3:]])
         # if the symbol is a variable but isn't in the correct frame
         elif instruct.args[0].type == "var":
             quit(54)
@@ -219,7 +276,7 @@ def pushs(instruct, interpret):
 
 
 def pops(instruct, interpret):
-    global dataStack, globalFrame, tempFrame
+    global dataStack, globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 1)
@@ -231,22 +288,22 @@ def pops(instruct, interpret):
         if not dataStack:
             quit(56)
         else:
-            # if the variable belongs to the temporary frame and the temporary frame exists
-            if re.match(r"^TF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
-                tempFrame.update({instruct.args[0].name[3:]: dataStack.pop()})
-            # if the variable belongs to the temporary frame and the temporary frame doesn't exist
-            elif re.match(r"^TF@$", instruct.args[0].name[0:3]) and tempFrame is None:
-                quit(55)
-            # if the variable belongs to the global frame
-            elif re.match(r"^GF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
+            # if the variable in the global frame
+            if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
                 globalFrame.update({instruct.args[0].name[3:]: dataStack.pop()})
+            # if the variable in the temporary frame
+            elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+                tempFrame.update({instruct.args[0].name[3:]: dataStack.pop()})
+            # if the variable in the local frame
+            elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in localFrame[-1]:
+                localFrame[-1].update({instruct.args[0].name[3:]: dataStack.pop()})
             # if there is no such variable defined in any frame
             else:
                 quit(54)
 
 
 def add(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 3)
@@ -256,45 +313,101 @@ def add(instruct, interpret):
     elif interpret == 1:
         symb1 = None
         symb2 = None
-        if re.match(r"^GF@$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
-            # if the first symbol is a variable in the correct frame
-            if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[1].name[3:]].isdigit():
-                    symb1 = globalFrame[instruct.args[1].name[3:]]
-                else:
-                    quit(53)
-            # if the first symbol is a variable but isn't in the correct frame
-            elif instruct.args[1].type == "var":
-                quit(54)
-            # if the first symbol is an integer
-            elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
-                symb1 = instruct.args[1].name
-            # if the first symbol isn't an integer
+        # if the first symbol is a variable in the global frame
+        if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = globalFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # if the second symbol is a variable in the correct frame
-            if instruct.args[2].type == "var" and instruct.args[2].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[2].name[3:]].isdigit():
-                    symb2 = globalFrame[instruct.args[2].name[3:]]
-                else:
-                    quit(53)
-            # if the second symbol is a variable but isn't in the correct frame
-            elif instruct.args[2].type == "var":
-                quit(54)
-            # if the second symbol is an integer
-            elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
-                symb2 = instruct.args[2].name
-            # if the second symbol isn't an integer
+        # if the first symbol is a variable in the temporary frame
+        elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # performing the ADD operation
+        # if the first symbol is a variable in the local frame
+        elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[1].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[1].name[3:]]
+            else:
+                quit(53)
+        # if the first symbol is a variable but isn't in the correct frame
+        elif instruct.args[1].type == "var":
+            quit(54)
+        # if the first symbol is an integer
+        elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
+            symb1 = instruct.args[1].name
+        # if the first symbol isn't an integer
+        else:
+            quit(53)
+        # if the second symbol is a variable in the global frame
+        if instruct.args[2].type == "var" and re.match(r"^(GF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[2].name[3:]].isdigit():
+                symb2 = globalFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the local frame
+        elif instruct.args[2].type == "var" and re.match(r"^(LF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[2].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the temporary frame
+        elif instruct.args[2].type == "var" and re.match(r"^(TF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[2].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable but isn't in the correct frame
+        elif instruct.args[2].type == "var":
+            quit(54)
+        # if the second symbol is an integer
+        elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
+            symb2 = instruct.args[2].name
+        # if the second symbol isn't an integer
+        else:
+            quit(53)
+        # performing the ADD operation
+        # if the variable in the global frame
+        if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
             globalFrame.update({instruct.args[0].name[3:]: str(int(symb1) + int(symb2))})
+            return
+        # if the variable in the temporary frame
+        if re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+            tempFrame.update({instruct.args[0].name[3:]: str(int(symb1) + int(symb2))})
+            return
+        # if the temporary frame doesn't exist
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not tempFrame:
+            quit(55)
+        # if the temporary frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
+        # if the variable in the local frame
+        if re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in localFrame[-1]:
+            localFrame[-1].update({instruct.args[0].name[3:]: str(int(symb1) + int(symb2))})
+            return
+        # if the local frame doesn't exist
+        elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and not localFrame:
+            quit(55)
+        # if the local frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
 
 
 def sub(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 3)
@@ -304,46 +417,101 @@ def sub(instruct, interpret):
     elif interpret == 1:
         symb1 = None
         symb2 = None
-        if frame == "G" and instruct.args[0].name[3:] in globalFrame:
-            # if the first symbol is a variable in the correct frame
-            if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[1].name[3:]].isdigit():
-                    symb1 = globalFrame[instruct.args[1].name[3:]]
-                else:
-                    quit(53)
-            # if the first symbol is a variable but isn't in the correct frame
-            elif instruct.args[1].type == "var":
-                quit(54)
-            # if the first symbol is an integer
-            elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
-                symb1 = instruct.args[1].name
-            # if the first symbol isn't an integer
+        # if the first symbol is a variable in the global frame
+        if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = globalFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # if the second symbol is a variable in the correct frame
-            if instruct.args[2].type == "var" and instruct.args[2].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[2].name[3:]].isdigit():
-                    symb2 = globalFrame[instruct.args[2].name[3:]]
-                else:
-                    quit(53)
-            # if the second symbol is a variable but isn't in the correct frame
-            elif instruct.args[2].type == "var":
-                quit(54)
-            # if the second symbol is an integer
-            elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
-                symb2 = instruct.args[2].name
-            # if the second symbol isn't an integer
+        # if the first symbol is a variable in the temporary frame
+        elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # performing the SUB operation
+        # if the first symbol is a variable in the local frame
+        elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[1].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[1].name[3:]]
+            else:
+                quit(53)
+        # if the first symbol is a variable but isn't in the correct frame
+        elif instruct.args[1].type == "var":
+            quit(54)
+        # if the first symbol is an integer
+        elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
+            symb1 = instruct.args[1].name
+        # if the first symbol isn't an integer
+        else:
+            quit(53)
+        # if the second symbol is a variable in the global frame
+        if instruct.args[2].type == "var" and re.match(r"^(GF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[2].name[3:]].isdigit():
+                symb2 = globalFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the local frame
+        elif instruct.args[2].type == "var" and re.match(r"^(LF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[2].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the temporary frame
+        elif instruct.args[2].type == "var" and re.match(r"^(TF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[2].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable but isn't in the correct frame
+        elif instruct.args[2].type == "var":
+            quit(54)
+        # if the second symbol is an integer
+        elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
+            symb2 = instruct.args[2].name
+        # if the second symbol isn't an integer
+        else:
+            quit(53)
+        # performing the SUB operation
+        # if the variable in the global frame
+        if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
             globalFrame.update({instruct.args[0].name[3:]: str(int(symb1) - int(symb2))})
-
+            return
+        # if the variable in the temporary frame
+        if re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+            tempFrame.update({instruct.args[0].name[3:]: str(int(symb1) - int(symb2))})
+            return
+        # if the temporary frame doesn't exist
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not tempFrame:
+            quit(55)
+        # if the temporary frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
+        # if the variable in the local frame
+        if re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in localFrame[-1]:
+            localFrame[-1].update({instruct.args[0].name[3:]: str(int(symb1) - int(symb2))})
+            return
+        # if the local frame doesn't exist
+        elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and not localFrame:
+            quit(55)
+        # if the local frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
 
 
 def mul(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 3)
@@ -353,45 +521,101 @@ def mul(instruct, interpret):
     elif interpret == 1:
         symb1 = None
         symb2 = None
-        if frame == "G" and instruct.args[0].name[3:] in globalFrame:
-            # if the first symbol is a variable in the correct frame
-            if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[1].name[3:]].isdigit():
-                    symb1 = globalFrame[instruct.args[1].name[3:]]
-                else:
-                    quit(53)
-            # if the first symbol is a variable but isn't in the correct frame
-            elif instruct.args[1].type == "var":
-                quit(54)
-            # if the first symbol is an integer
-            elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
-                symb1 = instruct.args[1].name
-            # if the first symbol isn't an integer
+        # if the first symbol is a variable in the global frame
+        if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = globalFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # if the second symbol is a variable in the correct frame
-            if instruct.args[2].type == "var" and instruct.args[2].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[2].name[3:]].isdigit():
-                    symb2 = globalFrame[instruct.args[2].name[3:]]
-                else:
-                    quit(53)
-            # if the second symbol is a variable but isn't in the correct frame
-            elif instruct.args[2].type == "var":
-                quit(54)
-            # if the second symbol is an integer
-            elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
-                symb2 = instruct.args[2].name
-            # if the second symbol isn't an integer
+        # if the first symbol is a variable in the temporary frame
+        elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # performing the MUL operation
+        # if the first symbol is a variable in the local frame
+        elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[1].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[1].name[3:]]
+            else:
+                quit(53)
+        # if the first symbol is a variable but isn't in the correct frame
+        elif instruct.args[1].type == "var":
+            quit(54)
+        # if the first symbol is an integer
+        elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
+            symb1 = instruct.args[1].name
+        # if the first symbol isn't an integer
+        else:
+            quit(53)
+        # if the second symbol is a variable in the global frame
+        if instruct.args[2].type == "var" and re.match(r"^(GF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[2].name[3:]].isdigit():
+                symb2 = globalFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the local frame
+        elif instruct.args[2].type == "var" and re.match(r"^(LF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[2].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the temporary frame
+        elif instruct.args[2].type == "var" and re.match(r"^(TF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[2].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable but isn't in the correct frame
+        elif instruct.args[2].type == "var":
+            quit(54)
+        # if the second symbol is an integer
+        elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
+            symb2 = instruct.args[2].name
+        # if the second symbol isn't an integer
+        else:
+            quit(53)
+        # performing the MUL operation
+        # if the variable in the global frame
+        if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
             globalFrame.update({instruct.args[0].name[3:]: str(int(symb1) * int(symb2))})
+            return
+        # if the variable in the temporary frame
+        if re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+            tempFrame.update({instruct.args[0].name[3:]: str(int(symb1) * int(symb2))})
+            return
+        # if the temporary frame doesn't exist
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not tempFrame:
+            quit(55)
+        # if the temporary frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
+        # if the variable in the local frame
+        if re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in localFrame[-1]:
+            localFrame[-1].update({instruct.args[0].name[3:]: str(int(symb1) * int(symb2))})
+            return
+        # if the local frame doesn't exist
+        elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and not localFrame:
+            quit(55)
+        # if the local frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
 
 
 def idiv(instruct, interpret):
-    global globalFrame, tempFrame, frame
+    global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
         check_num(len(instruct.args), 3)
@@ -401,44 +625,100 @@ def idiv(instruct, interpret):
     elif interpret == 1:
         symb1 = None
         symb2 = None
-        if frame == "G" and instruct.args[0].name[3:] in globalFrame:
-            # if the first symbol is a variable in the correct frame
-            if instruct.args[1].type == "var" and instruct.args[1].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[1].name[3:]].isdigit():
-                    symb1 = globalFrame[instruct.args[1].name[3:]]
-                else:
-                    quit(53)
-            # if the first symbol is a variable but isn't in the correct frame
-            elif instruct.args[1].type == "var":
-                quit(54)
-            # if the first symbol is an integer
-            elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
-                symb1 = instruct.args[1].name
-            # if the first symbol isn't an integer
+        # if the first symbol is a variable in the global frame
+        if instruct.args[1].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = globalFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # if the second symbol is a variable in the correct frame
-            if instruct.args[2].type == "var" and instruct.args[2].name[3:] in globalFrame:
-                # if the symbol is an integer
-                if globalFrame[instruct.args[2].name[3:]].isdigit():
-                    symb2 = globalFrame[instruct.args[2].name[3:]]
-                else:
-                    quit(53)
-            # if the second symbol is a variable but isn't in the correct frame
-            elif instruct.args[2].type == "var":
-                quit(54)
-            # if the second symbol is an integer
-            elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
-                symb2 = instruct.args[2].name
-            # if the second symbol isn't an integer
+        # if the first symbol is a variable in the temporary frame
+        elif instruct.args[1].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[1].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[1].name[3:]]
             else:
                 quit(53)
-            # performing the DIV operation
-            if int(symb2) == 0:
-                quit(57)
+        # if the first symbol is a variable in the local frame
+        elif instruct.args[1].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[1].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[1].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[1].name[3:]]
             else:
-                globalFrame.update({instruct.args[0].name[3:]: str(int(symb1) // int(symb2))})
+                quit(53)
+        # if the first symbol is a variable but isn't in the correct frame
+        elif instruct.args[1].type == "var":
+            quit(54)
+        # if the first symbol is an integer
+        elif instruct.args[1].type == "int" and instruct.args[1].name.isdigit:
+            symb1 = instruct.args[1].name
+        # if the first symbol isn't an integer
+        else:
+            quit(53)
+        # if the second symbol is a variable in the global frame
+        if instruct.args[2].type == "var" and re.match(r"^(GF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in globalFrame:
+            # if the symbol is an integer
+            if globalFrame[instruct.args[2].name[3:]].isdigit():
+                symb2 = globalFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the local frame
+        elif instruct.args[2].type == "var" and re.match(r"^(LF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in localFrame[-1]:
+            # if the symbol is an integer
+            if localFrame[-1][instruct.args[2].name[3:]].isdigit():
+                symb1 = localFrame[-1][instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable in the temporary frame
+        elif instruct.args[2].type == "var" and re.match(r"^(TF@).*$", instruct.args[2].name[0:3]) \
+                and instruct.args[2].name[3:] in tempFrame:
+            # if the symbol is an integer
+            if tempFrame[instruct.args[2].name[3:]].isdigit():
+                symb1 = tempFrame[instruct.args[2].name[3:]]
+            else:
+                quit(53)
+        # if the second symbol is a variable but isn't in the correct frame
+        elif instruct.args[2].type == "var":
+            quit(54)
+        # if the second symbol is an integer
+        elif instruct.args[2].type == "int" and instruct.args[1].name.isdigit:
+            symb2 = instruct.args[2].name
+        # if the second symbol isn't an integer
+        else:
+            quit(53)
+        # performing the IDIV operation
+        # if the denominator is 0
+        if int(symb2) == 0:
+            quit(57)
+        # if the variable in the global frame
+        if re.match(r"^(GF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in globalFrame:
+            globalFrame.update({instruct.args[0].name[3:]: str(int(symb1) // int(symb2))})
+            return
+        # if the variable in the temporary frame
+        if re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in tempFrame:
+            tempFrame.update({instruct.args[0].name[3:]: str(int(symb1) // int(symb2))})
+            return
+        # if the temporary frame doesn't exist
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not tempFrame:
+            quit(55)
+        # if the temporary frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
+        # if the variable in the local frame
+        if re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and instruct.args[0].name[3:] in localFrame[-1]:
+            localFrame[-1].update({instruct.args[0].name[3:]: str(int(symb1) // int(symb2))})
+            return
+        # if the local frame doesn't exist
+        elif re.match(r"^(LF@).*$", instruct.args[0].name[0:3]) and not localFrame:
+            quit(55)
+        # if the local frame exists but the variable isn't in it
+        elif re.match(r"^(TF@).*$", instruct.args[0].name[0:3]) and not instruct.args[0].name[3:] in tempFrame:
+            quit(54)
 
 
 def lt(instruct, interpret):
@@ -822,7 +1102,7 @@ def write(instruct, interpret):
         # if the symbol is a variable
         if instruct.args[0].type == "var":
             # if the program is in the global frame and the variable is in the global frame
-            if frame == "G" == instruct.args[0].name[3:] in globalFrame:
+            if frame == "G" and instruct.args[0].name[3:] in globalFrame:
                 print_out(globalFrame[instruct.args[0].name[3:]], 'std')
             # if the program is in the temporary frame and the variable is in the temporary frame
             elif frame == "T" and instruct.args[0].name[3:] in tempFrame:
@@ -1121,8 +1401,17 @@ def dprint(instruct, interpret):
     elif interpret == 1:
         value = None
         # if the symbol is a variable in the correct frame
-        if instruct.args[0].type == "var" and instruct.args[0].name[3:] in globalFrame:
+        if instruct.args[0].type == "var" and re.match(r"^(GF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[0].name[3:] in globalFrame:
             value = globalFrame[instruct.args[0].name[3:]]
+        # if the symbol is a variable in the correct frame
+        elif instruct.args[0].type == "var" and re.match(r"^(TF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[0].name[3:] in tempFrame:
+            value = tempFrame[instruct.args[0].name[3:]]
+        # if the symbol is a variable in the correct frame
+        elif instruct.args[0].type == "var" and re.match(r"^(LF@).*$", instruct.args[1].name[0:3]) \
+                and instruct.args[0].name[3:] in localFrame[-1]:
+            value = localFrame[-1][instruct.args[0].name[3:]]
         # if the symbol is a variable but isn't in the correct frame
         elif instruct.args[0].type == "var":
             quit(54)
