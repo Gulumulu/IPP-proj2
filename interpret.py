@@ -46,7 +46,6 @@ count_insts = 0
 stats = None
 global_frame = {}
 temp_frame = {}
-frame = "G"
 
 
 # function for parsing the arguments
@@ -137,11 +136,15 @@ def check_xml():
 
 # checks instructions for errors
 def parse_instruction(interpret):
-    global instruction_list, argument_list, global_frame, temp_frame, frame
+    global instruction_list, argument_list, global_frame, temp_frame
+
+    counter = 0
 
     # calling the instruction checker based on the instruction name
     # if instruction name is not found exits
-    for instruct in instruction_list:
+    # for instruct in instruction_list:
+    while counter < len(instruction_list):
+        instruct = instruction_list[counter]
         if re.match(r"^MOVE$", instruct.opcode):
             INSTR.move(instruct, interpret)
         elif re.match(r"^CREATEFRAME$", instruct.opcode):
@@ -199,7 +202,7 @@ def parse_instruction(interpret):
         elif re.match(r"^TYPE$", instruct.opcode):
             INSTR.type(instruct, interpret)
         elif re.match(r"^LABEL$", instruct.opcode):
-            INSTR.label(instruct, interpret)
+            INSTR.label(instruct, counter)
         elif re.match(r"^JUMP$", instruct.opcode):
             INSTR.jump(instruct, interpret)
         elif re.match(r"^JUMPIFEQ$", instruct.opcode):
@@ -215,6 +218,7 @@ def parse_instruction(interpret):
         else:
             # mistake in instruction name
             exit(32)
+        counter += 1
 
 
 # function for parsing the xml input
