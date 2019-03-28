@@ -156,9 +156,9 @@ def parse_instruction(interpret):
         elif re.match(r"^DEFVAR$", instruct.opcode):
             INSTR.defvar(instruct, interpret)
         elif re.match(r"^CALL$", instruct.opcode):
-            INSTR.call(instruct, interpret)
+            heh = INSTR.call(instruct, interpret, counter)
         elif re.match(r"^RETURN$", instruct.opcode):
-            INSTR._return(instruct, interpret)
+            heh = INSTR._return(instruct, interpret)
         elif re.match(r"^PUSHS^", instruct.opcode):
             INSTR.pushs(instruct, interpret)
         elif re.match(r"^POPS$", instruct.opcode):
@@ -202,13 +202,13 @@ def parse_instruction(interpret):
         elif re.match(r"^TYPE$", instruct.opcode):
             INSTR.type(instruct, interpret)
         elif re.match(r"^LABEL$", instruct.opcode):
-            INSTR.label(instruct, counter)
+            INSTR.label(instruct, interpret, counter)
         elif re.match(r"^JUMP$", instruct.opcode):
-            INSTR.jump(instruct, interpret)
+            heh = INSTR.jump(instruct, interpret)
         elif re.match(r"^JUMPIFEQ$", instruct.opcode):
-            INSTR.jumpifeq(instruct, interpret)
+            heh = INSTR.jumpifeq(instruct, interpret, counter)
         elif re.match(r"^JUMPIFNOTEQ$", instruct.opcode):
-            INSTR.jumpifnoteq(instruct, interpret)
+            heh = INSTR.jumpifnoteq(instruct, interpret, counter)
         elif re.match(r"^EXIT$", instruct.opcode):
             INSTR.exit(instruct, interpret)
         elif re.match(r"^DPRINT$", instruct.opcode):
