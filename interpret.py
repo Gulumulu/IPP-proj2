@@ -2,6 +2,7 @@ import sys
 import getopt
 import re
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
 import instructions as INSTR
 
 '''
@@ -156,9 +157,9 @@ def parse_instruction(interpret):
         elif re.match(r"^DEFVAR$", instruct.opcode):
             INSTR.defvar(instruct, interpret)
         elif re.match(r"^CALL$", instruct.opcode):
-            heh = INSTR.call(instruct, interpret, counter)
+            counter = INSTR.call(instruct, interpret, counter)
         elif re.match(r"^RETURN$", instruct.opcode):
-            heh = INSTR._return(instruct, interpret)
+            counter = INSTR._return(instruct, interpret, counter)
         elif re.match(r"^PUSHS^", instruct.opcode):
             INSTR.pushs(instruct, interpret)
         elif re.match(r"^POPS$", instruct.opcode):
@@ -204,17 +205,17 @@ def parse_instruction(interpret):
         elif re.match(r"^LABEL$", instruct.opcode):
             INSTR.label(instruct, interpret, counter)
         elif re.match(r"^JUMP$", instruct.opcode):
-            heh = INSTR.jump(instruct, interpret)
+            counter = INSTR.jump(instruct, interpret, counter)
         elif re.match(r"^JUMPIFEQ$", instruct.opcode):
-            heh = INSTR.jumpifeq(instruct, interpret, counter)
+            counter = INSTR.jumpifeq(instruct, interpret, counter)
         elif re.match(r"^JUMPIFNOTEQ$", instruct.opcode):
-            heh = INSTR.jumpifnoteq(instruct, interpret, counter)
+            counter = INSTR.jumpifnoteq(instruct, interpret, counter)
         elif re.match(r"^EXIT$", instruct.opcode):
             INSTR.exit(instruct, interpret)
         elif re.match(r"^DPRINT$", instruct.opcode):
             INSTR.dprint(instruct, interpret)
         elif re.match(r"^BREAK$", instruct.opcode):
-            INSTR._break(instruct, interpret)
+            INSTR._break(instruct, interpret, counter)
         else:
             # mistake in instruction name
             exit(32)
@@ -225,22 +226,30 @@ def parse_instruction(interpret):
 def interpret():
     global source, input, source_file, input_file
 
-    # read xml source from file or from stdin
+    # read the xml source from stdin
     if source == "stdin":
         source_file = sys.stdin.readline()
+    # read the xml source from an xml file
     else:
         try:
             source_file = ET.parse(source)
-        except:
-            # error while opening input xml file
+        # error while parsing the file
+        except ParseError:
             exit(11)
 
-    # read input from file or from stdin
+    # read the READ instruction input from stdin
     if input == "stdin":
         input_file = sys.stdin.readline()
+    # read the READ instruction input from a file
     else:
         print("")
-        #input_file = ET.parse(input)
+        '''
+        try:
+            input_file = ET.parse(source)
+        # error while parsing the file
+        except ParseError:
+            exit(11)
+        '''
 
     # calling the function to check the xml file for mistakes
     check_xml()
