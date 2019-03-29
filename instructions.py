@@ -52,7 +52,7 @@ def check_data(args):
             if not re.match(r"^(true|false|TRUE|FALSE)$", args[x].name):
                 quit(32)
         elif args[x].type == 'var':
-            if not re.match(r"^([G|L|T]F@)[\w|_|-|$|&|%|*|!|?][\w|_|-|$|&|%|*|!|?]+$", args[x].name, flags=re.UNICODE):
+            if not re.match(r"^([G|L|T]F@)[\w|\d|_|-|$|&|%|*|!|?]+$", args[x].name, flags=re.UNICODE):
                 quit(32)
         elif args[x].type == 'nil':
             if not re.match(r"^(nil)$", args[x].name):
@@ -166,8 +166,10 @@ def check_dest(variable):
 def set_type(string):
     if string is None:
         return string
-    elif re.match(r"^(true|false)$", string.lower()):
-        return bool(string.lower())
+    elif re.match(r"^(true)$", string.lower()):
+        return True
+    elif re.match(r"^(false)$", string.lower()):
+        return False
     elif re.match(r"^([-|+]?\d+)$", string):
         return int(string)
     elif re.match(r"^(nil)$", string.lower()):
@@ -225,13 +227,14 @@ def pushframe(instruct, interpret):
     if interpret == 0:
         check_num(len(instruct.args), 0)
     elif interpret == 1:
-        # if the temporary frame wan't initialised
-        if tempFrame is None:
-            quit(55)
         # add the current temporary frame to the top of the local frame stack and destroy the temporary frame
-        localFrame.append(tempFrame)
-        tempFrame.clear()
-        tempFrame = None
+        if not bool(tempFrame) or tempFrame:
+            localFrame.append(tempFrame)
+            tempFrame.clear()
+            tempFrame = None
+        # if the temporary frame wan't initialised
+        else:
+            quit(55)
 
 
 def popframe(instruct, interpret):
@@ -240,11 +243,12 @@ def popframe(instruct, interpret):
     if interpret == 0:
         check_num(len(instruct.args), 0)
     elif interpret == 1:
-        # if the local frame isn't initialised
-        if localFrame is None or not localFrame or tempFrame is None:
-            quit(55)
         # pop the top frame from the local frame stack into the temporary frame
-        tempFrame = localFrame.pop()
+        if localFrame or not bool(tempFrame) or tempFrame:
+            tempFrame = localFrame.pop()
+        # if the local frame isn't initialised
+        else:
+            quit(55)
 
 
 def defvar(instruct, interpret):
@@ -281,7 +285,7 @@ def call(instruct, interpret, counter):
         return counter
     if interpret == 1:
         # store the position
-        returnJump.append(counter + 1)
+        returnJump.append(counter)
         # if the label exists jump to it
         if instruct.args[0].name in labels:
             return labels[instruct.args[0].name]
@@ -329,14 +333,14 @@ def pops(instruct, interpret):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret == 1:
-        # if the data stack is empty
-        if not dataStack:
-            quit(56)
-        else:
+        if not bool(dataStack) or dataStack:
             # loading the destination variable
             dest = check_dest(instruct.args[0])
             # poping the data from the data stack into the variable
             dest.update({instruct.args[0].name[3:]: dataStack.pop()})
+        # if the data stack is empty
+        else:
+            quit(56)
 
 
 def add(instruct, interpret):
@@ -681,7 +685,7 @@ def stri2int(instruct, interpret):
             quit(53)
 
 
-def read(instruct, interpret):
+def read(instruct, interpret, input, count):
     global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
@@ -689,6 +693,9 @@ def read(instruct, interpret):
         vars = ['var', 'type']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
+    elif interpret == 1:
+        dest = check_dest(instruct.args[0])
+        dest.update({instruct.args[0].name[3:]: set_type(input[count].rstrip())})
 
 
 def write(instruct, interpret):
@@ -967,7 +974,7 @@ def jumpifnoteq(instruct, interpret, counter):
             quit(53)
 
 
-def exit(instruct, interpret):
+def _exit(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
     if interpret == 0:
@@ -977,11 +984,11 @@ def exit(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the exit code
-        code = check_symb(instruct.args[1])
+        code = check_symb(instruct.args[0])
         # if the symbol is an integer
         if get_type(code) == "int":
             # if the symbol is in the correct range
-            if 49 <= code <= 0:
+            if 0 <= code <= 49:
                 quit(code)
             else:
                 quit(57)
@@ -1000,7 +1007,7 @@ def dprint(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[0])
         # performing the PRINT operation
         print_out(symb, "err")
 
@@ -1011,7 +1018,7 @@ def _break(instruct, interpret, counter):
     if interpret == 0:
         check_num(len(instruct.args), 0)
     elif interpret == 1:
-        print_out("Position in code: " + counter, "err")
+        print_out("Position in code: " + str(counter), "err")
         print_out("GLOBAL FRAME: \n", "err")
         print_out(globalFrame, "err")
         print_out("LOCAL FRAME: \n", "err")

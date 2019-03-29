@@ -23,7 +23,7 @@ nazvy argumentov
 class Instruction:
     def __init__(self, order, opcode, Argument):
         self.order = order
-        self.opcode = opcode
+        self.opcode = opcode.upper()
         self.args = Argument
 
 
@@ -32,14 +32,14 @@ class Argument:
     def __init__(self, num, type, name=None):
         self.num = num
         self.type = type
-        self.name = name
+        self.name = name.replace("\n", "")
 
 
 # global variables
 source = "stdin"
 input = "stdin"
 source_file = ''
-input_file = ''
+input_file = []
 instruction_list = []
 argument_list = []
 count_vars = 0
@@ -137,9 +137,10 @@ def check_xml():
 
 # checks instructions for errors
 def parse_instruction(interpret):
-    global instruction_list, argument_list, global_frame, temp_frame
+    global instruction_list, argument_list, global_frame, temp_frame, input_file
 
     counter = 0
+    read_count = 0
 
     # calling the instruction checker based on the instruction name
     # if instruction name is not found exits
@@ -160,7 +161,7 @@ def parse_instruction(interpret):
             counter = INSTR.call(instruct, interpret, counter)
         elif re.match(r"^RETURN$", instruct.opcode):
             counter = INSTR._return(instruct, interpret, counter)
-        elif re.match(r"^PUSHS^", instruct.opcode):
+        elif re.match(r"^PUSHS$", instruct.opcode):
             INSTR.pushs(instruct, interpret)
         elif re.match(r"^POPS$", instruct.opcode):
             INSTR.pops(instruct, interpret)
@@ -189,7 +190,8 @@ def parse_instruction(interpret):
         elif re.match(r"^STRI2INT$", instruct.opcode):
             INSTR.stri2int(instruct, interpret)
         elif re.match(r"^READ$", instruct.opcode):
-            INSTR.read(instruct, interpret)
+            INSTR.read(instruct, interpret, input_file, read_count)
+            read_count += 1
         elif re.match(r"^WRITE$", instruct.opcode):
             INSTR.write(instruct, interpret)
         elif re.match(r"^CONCAT$", instruct.opcode):
@@ -208,10 +210,10 @@ def parse_instruction(interpret):
             counter = INSTR.jump(instruct, interpret, counter)
         elif re.match(r"^JUMPIFEQ$", instruct.opcode):
             counter = INSTR.jumpifeq(instruct, interpret, counter)
-        elif re.match(r"^JUMPIFNOTEQ$", instruct.opcode):
+        elif re.match(r"^JUMPIFNEQ$", instruct.opcode):
             counter = INSTR.jumpifnoteq(instruct, interpret, counter)
         elif re.match(r"^EXIT$", instruct.opcode):
-            INSTR.exit(instruct, interpret)
+            INSTR._exit(instruct, interpret)
         elif re.match(r"^DPRINT$", instruct.opcode):
             INSTR.dprint(instruct, interpret)
         elif re.match(r"^BREAK$", instruct.opcode):
@@ -242,14 +244,13 @@ def interpret():
         input_file = sys.stdin.readline()
     # read the READ instruction input from a file
     else:
-        print("")
-        '''
         try:
-            input_file = ET.parse(source)
+            file = open(input, "r")
+            for line in file:
+                input_file.append(line)
         # error while parsing the file
-        except ParseError:
+        except IOError:
             exit(11)
-        '''
 
     # calling the function to check the xml file for mistakes
     check_xml()
