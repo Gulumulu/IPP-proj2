@@ -43,7 +43,7 @@ def check_data(args):
                 x += 1
                 continue
                 # !!!!! mozno bude treba zmenit regex !!!!!
-            elif not re.match(r"^(([\w]*(\\\\[0-9]{3})*)*)\S*$", args[x].name, flags=re.UNICODE):
+            elif not re.match(r"^(?!.*\#.*)(([\w]*(\\\\[0-9]{3})*)*)\S*$", args[x].name, flags=re.UNICODE):
                 quit(32)
         elif args[x].type == 'int':
             if not re.match(r"^([-|+]?\d+)$", args[x].name):
@@ -81,7 +81,7 @@ def print_out(text, out):
             print(elem, end='', file=file)
     # if the text to print is a bool
     elif isinstance(text, bool):
-        print(text, end='', file=file)
+        print(str(text).lower(), end='', file=file)
     # if the text to print is an integer
     elif isinstance(text, int):
         print(text, end='', file=file)
@@ -105,15 +105,24 @@ def check_symb(symbol):
     # if the symbol is a GF variable in the global frame return it
     elif symbol.type == "var" and re.match(r"^(GF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in globalFrame:
-        return globalFrame[symbol.name[3:]]
+        if globalFrame[symbol.name[3:]] is not None:
+            return globalFrame[symbol.name[3:]]
+        else:
+            quit(56)
     # if the symbol is a TF variable in the temporary frame return it
     elif symbol.type == "var" and re.match(r"^(TF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in tempFrame:
-        return tempFrame[symbol.name[3:]]
+        if tempFrame[symbol.name[3:]] is not None:
+            return tempFrame[symbol.name[3:]]
+        else:
+            quit(56)
     # if the symbol is an LF variable in the local frame return it
     elif symbol.type == "var" and re.match(r"^(LF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in localFrame[-1]:
-        return localFrame[-1][symbol.name[3:]]
+        if localFrame[-1][symbol.name[3:]] is not None:
+            return localFrame[-1][symbol.name[3:]]
+        else:
+            quit(56)
     # if the symbol is a GF variable but isn't in the global frame
     elif re.match(r"^(GF@).*$", symbol.name[0:3]) and not symbol.name[3:] in globalFrame:
         quit(54)
@@ -146,21 +155,21 @@ def check_dest(variable):
     # if the variable is in the temporary frame
     elif re.match(r"^(TF@).*$", variable.name[0:3]) and variable.name[3:] in tempFrame:
         return tempFrame
+    # if the temporary frame doesn't exist
+    elif re.match(r"^(TF@).*$", variable.name[0:3]) and bool(tempFrame):
+        quit(55)
     # if the variable isn't in the temporary frame
     elif re.match(r"^(TF@).*$", variable.name[0:3]) and not variable.name[3:] in tempFrame:
         quit(54)
-    # if the temporary frame doesn't exist
-    elif re.match(r"^(TF@).*$", variable.name[0:3]) and not tempFrame:
-        quit(55)
     # if the variable is in the local frame
     elif re.match(r"^(LF@).*$", variable.name[0:3]) and variable.name[3:] in localFrame[-1]:
         return localFrame[-1]
+    # if the local frame doesn't exist
+    elif re.match(r"^(LF@).*$", variable.name[0:3]) and bool(localFrame):
+        quit(55)
     # if the variable isn't in the local frame
     elif re.match(r"^(LF@).*$", variable.name[0:3]) and not variable.name[3:] in localFrame[-1]:
         quit(54)
-    # if the local frame doesn't exist
-    elif re.match(r"^(LF@).*$", variable.name[0:3]) and not localFrame:
-        quit(55)
 
 
 def set_type(string):
@@ -227,14 +236,14 @@ def pushframe(instruct, interpret):
     if interpret == 0:
         check_num(len(instruct.args), 0)
     elif interpret == 1:
+        # if the temporary frame wan't initialised
+        if tempFrame is None:
+            quit(55)
         # add the current temporary frame to the top of the local frame stack and destroy the temporary frame
-        if not bool(tempFrame) or tempFrame:
+        elif not bool(tempFrame) or tempFrame:
             localFrame.append(tempFrame)
             tempFrame.clear()
             tempFrame = None
-        # if the temporary frame wan't initialised
-        else:
-            quit(55)
 
 
 def popframe(instruct, interpret):
@@ -333,7 +342,7 @@ def pops(instruct, interpret):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret == 1:
-        if not bool(dataStack) or dataStack:
+        if bool(dataStack):
             # loading the destination variable
             dest = check_dest(instruct.args[0])
             # poping the data from the data stack into the variable
@@ -745,6 +754,17 @@ def strlen(instruct, interpret):
         symb = check_symb(instruct.args[1])
         # loading the destination variable
         dest = check_dest(instruct.args[0])
+        # deal with the escape sequences in strings
+        i = 0
+        out = []
+        while i < len(symb):
+            if symb[i] == "\\":
+                out.append(chr(int(symb[i + 2:i + 4])))
+                i += 4
+            else:
+                out.append(symb[i])
+                i += 1
+        symb = ''.join(out)
         # performs the STRLEN function
         dest.update({instruct.args[0].name[3:]: len(symb)})
 
@@ -791,7 +811,7 @@ def setchar(instruct, interpret):
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the first symbol is a string and the second symbol is an integer
-        if get_type(symb1) == "int" and get_type(symb2) == "string":
+        if get_type(symb1) == "int" and get_type(symb2) == "string" and get_type(dest[instruct.args[0].name[3:]]) == "string":
             # if the index isn't outside of the string performs the SETCHAR operation
             if 0 <= int(symb1) < len(dest[instruct.args[0].name[3:]]):
                 tmp = dest[instruct.args[0].name[3:]]

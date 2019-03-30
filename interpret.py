@@ -22,7 +22,7 @@ nazvy argumentov
 # class for storing the information about an instruction
 class Instruction:
     def __init__(self, order, opcode, Argument):
-        self.order = order
+        self.order = int(order)
         self.opcode = opcode.upper()
         self.args = Argument
 
@@ -106,8 +106,13 @@ def check_xml():
 
     # checks if the program element has the language attribute with the IPPcode19 value
     for name, value in root.attrib.items():
-        if not re.match(r"^language$", name) or not re.match(r"^IPPcode19$", value):
-            exit(31)
+        if re.match(r"^language$", name) and re.match(r"^IPPcode19$", value):
+            continue
+        else:
+            if re.match(r"^name$", name) or re.match(r"^description$", name):
+                continue
+            else:
+                exit(31)
 
     # checking if the elements have correct name = instruction
     for instruct in root:
@@ -133,6 +138,14 @@ def check_xml():
             argument_list.append(Argument(x, arg.get('type'), arg.text))
         instruction_list.append(Instruction(instruct.get('order'), instruct.get('opcode'), argument_list))
         argument_list = []
+
+    instruction_list.sort(key=lambda x: x.order, reverse=False)
+
+    order = 1
+    for instruct in instruction_list:
+        if instruct.order != order:
+            exit(32)
+        order += 1
 
 
 # checks instructions for errors
