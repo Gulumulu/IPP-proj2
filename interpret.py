@@ -5,19 +5,6 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 import instructions as INSTR
 
-'''
-!!!TODO!!!
-treba zoradit pole instrukcii podla ich order-u (mozu byt prehadzane)
-'''
-
-'''
-!!!DONE!!!
-argumenty skriptu
-? format XML ?
-nazvy instrukcii
-nazvy argumentov
-'''
-
 
 # class for storing the information about an instruction
 class Instruction:
@@ -135,6 +122,13 @@ def check_xml():
         arg1 = instruct.findall('arg1')
         arg2 = instruct.findall('arg2')
         arg3 = instruct.findall('arg3')
+
+        # if arg elements have incorrect numbers
+        if len(arg1) == 0 and (len(arg2) != 0 or len(arg3) != 0):
+            exit(32)
+        elif len(arg2) == 0 and len(arg3) != 0:
+            exit(32)
+
         for arg in arg1 + arg2 + arg3:
             # checking for unwanted elements within the arg element
             for anything in arg:

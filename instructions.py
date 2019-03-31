@@ -9,6 +9,13 @@ labels = {}
 returnJump = []
 
 
+'''
+!!!!TODO!!!!!
+ESC sequences after READ instruct
+NIL output after TYPE
+'''
+
+
 # checks the number of arguments of an instruction
 def check_num(args, num):
     if args != num:
@@ -1089,9 +1096,18 @@ def _break(instruct, interpret, counter):
         check_num(len(instruct.args), 0)
     elif interpret == 1:
         print_out("Position in code: " + str(counter), "err")
+        print_out("\n", "err")
         print_out("GLOBAL FRAME: \n", "err")
-        print_out(globalFrame, "err")
+        if bool(globalFrame):
+            print_out(globalFrame, "err")
+        else:
+            print_out("empty\n", "err")
         print_out("LOCAL FRAME: \n", "err")
-        print_out(localFrame[-1], "err")
+        if bool(localFrame):
+            print_out(localFrame[-1], "err")
+        else: print_out("empty\n", "err")
         print_out("TEMPORARY FRAME: \n", "err")
-        print_out(tempFrame, "err")
+        if tempFrame is not None and bool(tempFrame):
+            print_out(tempFrame, "err")
+        else:
+            print_out("empty\n", "err")
