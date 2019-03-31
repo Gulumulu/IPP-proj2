@@ -33,9 +33,9 @@ instruction_list = []
 argument_list = []
 count_vars = 0
 count_insts = 0
+insts_num = 0
+vars_num = 0
 stats = None
-global_frame = {}
-temp_frame = {}
 
 
 # function for parsing the arguments
@@ -74,7 +74,7 @@ def check_argv():
             input = arg
 
     # checks if the stats argument was present when vars or insts arguments were
-    if (count_vars == 1 or count_insts == 1) and stats == None:
+    if (count_vars == 1 or count_insts == 1) and stats is None:
         exit(10)
 
     # check whether at least one of the files needed as input is present
@@ -152,103 +152,105 @@ def check_xml():
 
 
 # checks instructions for errors
-def parse_instruction(interpret):
-    global instruction_list, argument_list, global_frame, temp_frame, input_file
+def parse_instruction(mode):
+    global instruction_list, argument_list, input_file, insts_num, vars_num
 
     counter = 0
     read_count = 0
+    helper = [mode, 0, 0]
 
     # calling the instruction checker based on the instruction name
     # if instruction name is not found exits
-    # for instruct in instruction_list:
     while counter < len(instruction_list):
         instruct = instruction_list[counter]
         if re.match(r"^MOVE$", instruct.opcode):
-            INSTR.move(instruct, interpret)
+            INSTR.move(instruct, helper)
         elif re.match(r"^CREATEFRAME$", instruct.opcode):
-            INSTR.createframe(instruct, interpret)
+            INSTR.createframe(instruct, helper)
         elif re.match(r"^PUSHFRAME$", instruct.opcode):
-            INSTR.pushframe(instruct, interpret)
+            INSTR.pushframe(instruct, helper)
         elif re.match(r"^POPFRAME$", instruct.opcode):
-            INSTR.popframe(instruct, interpret)
+            INSTR.popframe(instruct, helper)
         elif re.match(r"^DEFVAR$", instruct.opcode):
-            INSTR.defvar(instruct, interpret)
+            INSTR.defvar(instruct, helper)
         elif re.match(r"^CALL$", instruct.opcode):
-            counter = INSTR.call(instruct, interpret, counter)
+            counter = INSTR.call(instruct, helper, counter)
         elif re.match(r"^RETURN$", instruct.opcode):
-            counter = INSTR._return(instruct, interpret, counter)
+            counter = INSTR._return(instruct, helper, counter)
         elif re.match(r"^PUSHS$", instruct.opcode):
-            INSTR.pushs(instruct, interpret)
+            INSTR.pushs(instruct, helper)
         elif re.match(r"^POPS$", instruct.opcode):
-            INSTR.pops(instruct, interpret)
+            INSTR.pops(instruct, helper)
         elif re.match(r"^ADD$", instruct.opcode):
-            INSTR.add(instruct, interpret)
+            INSTR.add(instruct, helper)
         elif re.match(r"^SUB$", instruct.opcode):
-            INSTR.sub(instruct, interpret)
+            INSTR.sub(instruct, helper)
         elif re.match(r"^MUL$", instruct.opcode):
-            INSTR.mul(instruct, interpret)
+            INSTR.mul(instruct, helper)
         elif re.match(r"^IDIV$", instruct.opcode):
-            INSTR.idiv(instruct, interpret)
+            INSTR.idiv(instruct, helper)
         elif re.match(r"^DIV$", instruct.opcode):
-            INSTR.div(instruct, interpret)
+            INSTR.div(instruct, helper)
         elif re.match(r"^LT$", instruct.opcode):
-            INSTR.lt(instruct, interpret)
+            INSTR.lt(instruct, helper)
         elif re.match(r"^GT$", instruct.opcode):
-            INSTR.gt(instruct, interpret)
+            INSTR.gt(instruct, helper)
         elif re.match(r"^EQ$", instruct.opcode):
-            INSTR.eq(instruct, interpret)
+            INSTR.eq(instruct, helper)
         elif re.match(r"^AND$", instruct.opcode):
-            INSTR._and(instruct, interpret)
+            INSTR._and(instruct, helper)
         elif re.match(r"^OR$", instruct.opcode):
-            INSTR._or(instruct, interpret)
+            INSTR._or(instruct, helper)
         elif re.match(r"^NOT$", instruct.opcode):
-            INSTR._not(instruct, interpret)
+            INSTR._not(instruct, helper)
         elif re.match(r"^INT2CHAR$", instruct.opcode):
-            INSTR.int2char(instruct, interpret)
+            INSTR.int2char(instruct, helper)
         elif re.match(r"^STRI2INT$", instruct.opcode):
-            INSTR.stri2int(instruct, interpret)
+            INSTR.stri2int(instruct, helper)
         elif re.match(r"^INT2FLOAT$", instruct.opcode):
-            INSTR.int2float(instruct, interpret)
+            INSTR.int2float(instruct, helper)
         elif re.match(r"^FLOAT2INT$", instruct.opcode):
-            INSTR.float2int(instruct, interpret)
+            INSTR.float2int(instruct, helper)
         elif re.match(r"^READ$", instruct.opcode):
-            INSTR.read(instruct, interpret, input_file, read_count)
+            INSTR.read(instruct, helper, input_file, read_count)
             read_count += 1
         elif re.match(r"^WRITE$", instruct.opcode):
-            INSTR.write(instruct, interpret)
+            INSTR.write(instruct, helper)
         elif re.match(r"^CONCAT$", instruct.opcode):
-            INSTR.concat(instruct, interpret)
+            INSTR.concat(instruct, helper)
         elif re.match(r"^STRLEN$", instruct.opcode):
-            INSTR.strlen(instruct, interpret)
+            INSTR.strlen(instruct, helper)
         elif re.match(r"^GETCHAR$", instruct.opcode):
-            INSTR.getchar(instruct, interpret)
+            INSTR.getchar(instruct, helper)
         elif re.match(r"^SETCHAR$", instruct.opcode):
-            INSTR.setchar(instruct, interpret)
+            INSTR.setchar(instruct, helper)
         elif re.match(r"^TYPE$", instruct.opcode):
-            INSTR.type(instruct, interpret)
+            INSTR.type(instruct, helper)
         elif re.match(r"^LABEL$", instruct.opcode):
-            INSTR.label(instruct, interpret, counter)
+            INSTR.label(instruct, helper, counter)
         elif re.match(r"^JUMP$", instruct.opcode):
-            counter = INSTR.jump(instruct, interpret, counter)
+            counter = INSTR.jump(instruct, helper, counter)
         elif re.match(r"^JUMPIFEQ$", instruct.opcode):
-            counter = INSTR.jumpifeq(instruct, interpret, counter)
+            counter = INSTR.jumpifeq(instruct, helper, counter)
         elif re.match(r"^JUMPIFNEQ$", instruct.opcode):
-            counter = INSTR.jumpifnoteq(instruct, interpret, counter)
+            counter = INSTR.jumpifnoteq(instruct, helper, counter)
         elif re.match(r"^EXIT$", instruct.opcode):
-            INSTR._exit(instruct, interpret)
+            INSTR._exit(instruct, helper)
         elif re.match(r"^DPRINT$", instruct.opcode):
-            INSTR.dprint(instruct, interpret)
+            INSTR.dprint(instruct, helper)
         elif re.match(r"^BREAK$", instruct.opcode):
-            INSTR._break(instruct, interpret, counter)
+            INSTR._break(instruct, helper, counter)
         else:
             # mistake in instruction name
             exit(32)
         counter += 1
 
+    insts_num = helper[1]
+
 
 # function for parsing the xml input
 def interpret():
-    global source, input, source_file, input_file
+    global source, input, source_file, input_file, stats, count_insts, count_vars, insts_num, vars_num
 
     # read the xml source from stdin
     if source == "stdin":
@@ -281,6 +283,13 @@ def interpret():
     # calling the function to interpret the instructions
     parse_instruction(1)
 
+    if stats is not None:
+        stats_file = open(stats, "w")
+        if count_insts == 1:
+            stats_file.write(str(insts_num) + "\n")
+        if count_vars == 1:
+            stats_file.write(str(vars_num) + "\n")
+        stats_file.close()
 
 # calling the function to parse the input arguments
 check_argv()

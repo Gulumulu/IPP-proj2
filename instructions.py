@@ -11,8 +11,12 @@ returnJump = []
 
 '''
 !!!!TODO!!!!!
+
 ESC sequences after READ instruct
 NIL output after TYPE
+max number of VARS in frames
+STACK FUNCTIONS
+mistakes in XML
 '''
 
 
@@ -228,12 +232,14 @@ def get_type(symbol):
 def move(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -244,9 +250,11 @@ def move(instruct, interpret):
 def createframe(instruct, interpret):
     global tempFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 0)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # if the temporary frame is not initialised
         if tempFrame is None:
             tempFrame = {}
@@ -258,9 +266,11 @@ def createframe(instruct, interpret):
 def pushframe(instruct, interpret):
     global tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 0)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # if the temporary frame wan't initialised
         if tempFrame is None:
             quit(55)
@@ -274,9 +284,11 @@ def pushframe(instruct, interpret):
 def popframe(instruct, interpret):
     global tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 0)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # pop the top frame from the local frame stack into the temporary frame
         if localFrame and (not bool(tempFrame) or tempFrame):
             tempFrame = localFrame.pop()
@@ -288,12 +300,14 @@ def popframe(instruct, interpret):
 def defvar(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['var']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # if the variable is supposed to be in the global frame
         if re.match(r"^(GF@).*$", instruct.args[0].name):
             globalFrame.update({instruct.args[0].name[3:]: None})
@@ -311,13 +325,15 @@ def defvar(instruct, interpret):
 def call(instruct, interpret, counter):
     global labels, returnJump
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['label']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
         return counter
-    if interpret == 1:
+    if interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # store the position
         returnJump.append(counter)
         # if the label exists jump to it
@@ -331,10 +347,12 @@ def call(instruct, interpret, counter):
 def _return(instruct, interpret, counter):
     global returnJump
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 0)
         return counter
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # if the jump point was previously defined
         if returnJump:
             return returnJump.pop()
@@ -346,12 +364,14 @@ def _return(instruct, interpret, counter):
 def pushs(instruct, interpret):
     global dataStack, globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[0], False)
         # pushing the symbol into the data stack
@@ -361,12 +381,14 @@ def pushs(instruct, interpret):
 def pops(instruct, interpret):
     global dataStack, globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['var']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         if bool(dataStack):
             # loading the destination variable
             dest = check_dest(instruct.args[0])
@@ -380,12 +402,14 @@ def pops(instruct, interpret):
 def add(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -406,12 +430,14 @@ def add(instruct, interpret):
 def sub(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -432,12 +458,14 @@ def sub(instruct, interpret):
 def mul(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -458,12 +486,14 @@ def mul(instruct, interpret):
 def idiv(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -485,12 +515,14 @@ def idiv(instruct, interpret):
 def div(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -513,12 +545,14 @@ def div(instruct, interpret):
 def lt(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -553,12 +587,14 @@ def lt(instruct, interpret):
 def gt(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -593,12 +629,14 @@ def gt(instruct, interpret):
 def eq(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -640,12 +678,14 @@ def eq(instruct, interpret):
 def _and(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -666,12 +706,14 @@ def _and(instruct, interpret):
 def _or(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -692,12 +734,14 @@ def _or(instruct, interpret):
 def _not(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -713,12 +757,14 @@ def _not(instruct, interpret):
 def int2char(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -738,12 +784,14 @@ def int2char(instruct, interpret):
 def stri2int(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -764,12 +812,14 @@ def stri2int(instruct, interpret):
 def int2float(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -785,12 +835,14 @@ def int2float(instruct, interpret):
 def float2int(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -806,12 +858,14 @@ def float2int(instruct, interpret):
 def read(instruct, interpret, input, count):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'type']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the input file is not empty
@@ -851,12 +905,14 @@ def read(instruct, interpret, input, count):
 def write(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         value = check_symb(instruct.args[0], False)
         # performing the PRINT operation
@@ -866,12 +922,14 @@ def write(instruct, interpret):
 def concat(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -888,12 +946,14 @@ def concat(instruct, interpret):
 def strlen(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[1], False)
         # loading the destination variable
@@ -920,12 +980,14 @@ def strlen(instruct, interpret):
 def getchar(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -946,12 +1008,14 @@ def getchar(instruct, interpret):
 def setchar(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['var', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -975,12 +1039,14 @@ def setchar(instruct, interpret):
 def type(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 2)
         vars = ['var', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb = check_symb(instruct.args[1], True)
         # loading the destination variable
@@ -996,7 +1062,7 @@ def type(instruct, interpret):
 def label(instruct, interpret, counter):
     global globalFrame, tempFrame, localFrame, labels
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['label']
         check_vars(vars, instruct.args)
@@ -1007,18 +1073,22 @@ def label(instruct, interpret, counter):
         # if the label was stored before
         else:
             quit(52)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         return
 
 
 def jump(instruct, interpret, counter):
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['label']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
         return counter
-    if interpret == 1:
+    if interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # if the label exists jump to it
         if instruct.args[0].name in labels:
             return labels[instruct.args[0].name]
@@ -1028,13 +1098,15 @@ def jump(instruct, interpret, counter):
 
 
 def jumpifeq(instruct, interpret, counter):
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['label', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
         return counter
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -1086,13 +1158,15 @@ def jumpifeq(instruct, interpret, counter):
 
 
 def jumpifnoteq(instruct, interpret, counter):
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['label', 'symb', 'symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
         return counter
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the first symbol
         symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
@@ -1146,12 +1220,14 @@ def jumpifnoteq(instruct, interpret, counter):
 def _exit(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the exit code
         code = check_symb(instruct.args[0], False)
         # if the symbol is an integer
@@ -1169,12 +1245,14 @@ def _exit(instruct, interpret):
 def dprint(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['symb']
         check_vars(vars, instruct.args)
         check_data(instruct.args)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
         # loading the symbol
         symb = check_symb(instruct.args[0], False)
         # performing the PRINT operation
@@ -1184,9 +1262,12 @@ def dprint(instruct, interpret):
 def _break(instruct, interpret, counter):
     global globalFrame, tempFrame, localFrame
 
-    if interpret == 0:
+    if interpret[0] == 0:
         check_num(len(instruct.args), 0)
-    elif interpret == 1:
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        # print out the state of the interpret to stderr
         print_out("Position in code: " + str(counter), "err")
         print_out("\n", "err")
         print_out("GLOBAL FRAME: \n", "err")
