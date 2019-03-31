@@ -189,6 +189,8 @@ def parse_instruction(interpret):
             INSTR.mul(instruct, interpret)
         elif re.match(r"^IDIV$", instruct.opcode):
             INSTR.idiv(instruct, interpret)
+        elif re.match(r"^DIV$", instruct.opcode):
+            INSTR.div(instruct, interpret)
         elif re.match(r"^LT$", instruct.opcode):
             INSTR.lt(instruct, interpret)
         elif re.match(r"^GT$", instruct.opcode):
@@ -205,6 +207,10 @@ def parse_instruction(interpret):
             INSTR.int2char(instruct, interpret)
         elif re.match(r"^STRI2INT$", instruct.opcode):
             INSTR.stri2int(instruct, interpret)
+        elif re.match(r"^INT2FLOAT$", instruct.opcode):
+            INSTR.int2float(instruct, interpret)
+        elif re.match(r"^FLOAT2INT$", instruct.opcode):
+            INSTR.float2int(instruct, interpret)
         elif re.match(r"^READ$", instruct.opcode):
             INSTR.read(instruct, interpret, input_file, read_count)
             read_count += 1

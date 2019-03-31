@@ -30,7 +30,7 @@ def check_vars(vars, args):
             if not re.match(r"^var$", args[x].type):
                 quit(32)
         elif vars[x] == 'symb':
-            if not re.match(r"^(string|var|bool|nil|int)$", args[x].type):
+            if not re.match(r"^(string|var|bool|nil|int|float)$", args[x].type):
                 quit(32)
         elif vars[x] == 'label':
             if not re.match(r"^label$", args[x].type):
@@ -49,11 +49,13 @@ def check_data(args):
             if args[x].name is None:
                 x += 1
                 continue
-                # !!!!! mozno bude treba zmenit regex !!!!!
             elif not re.match(r"^(?!.*\#.*)(([\w]*(\\\\[0-9]{3})*)*)\S*$", args[x].name, flags=re.UNICODE):
                 quit(32)
         elif args[x].type == 'int':
             if not re.match(r"^([-|+]?\d+)$", args[x].name):
+                quit(32)
+        elif args[x].type == 'float':
+            if not re.match(r"^[+|-]?(0x)?(\d)*.?[\d|\w]*[p[+|-]?\d*]?$", args[x].name):
                 quit(32)
         elif args[x].type == 'bool':
             if not re.match(r"^(true|false|TRUE|FALSE)$", args[x].name):
@@ -68,7 +70,7 @@ def check_data(args):
             if not re.match(r"^([\w]*(\\\\[0-9]{3})*)*$", args[x].name, flags=re.UNICODE):
                 quit(32)
         elif args[x].type == 'type':
-            if not re.match(r"^(string|int|bool)$", args[x].name):
+            if not re.match(r"^(string|int|bool|float)$", args[x].name):
                 quit(32)
         x += 1
 
@@ -92,6 +94,9 @@ def print_out(text, out):
     # if the text to print is an integer
     elif isinstance(text, int):
         print(text, end='', file=file)
+    # if the text to print is a float
+    elif isinstance(text, float):
+        print(float.hex(text), end='', file=file)
     # if the text to print is nil
     elif re.match(r"nil", text):
         print("", end='', file=file)
@@ -197,6 +202,8 @@ def set_type(string):
         return False
     elif string.type == "int" and re.match(r"^([-|+]?\d+)$", string.name):
         return int(string.name)
+    elif string.type == "float" and re.match(r"^[+|-]?(0x)?(\d)*.?[\d|\w]*[p[+|-]?\d*]?$", string.name):
+        return float.fromhex(string.name)
     elif string.type == "nil" and re.match(r"^(nil)$", string.name.lower()):
         return string.name.lower()
     elif string.type == "string" and re.match(r"^(([\w]*(\\\\[0-9]{3})*)*)\S*$", string.name, flags=re.UNICODE):
@@ -210,6 +217,8 @@ def get_type(symbol):
         return "bool"
     elif isinstance(symbol, int):
         return "int"
+    elif isinstance(symbol, float):
+        return "float"
     elif re.match(r"^(nil)$", symbol):
         return "nil"
     elif isinstance(symbol, str):
@@ -383,10 +392,12 @@ def add(instruct, interpret):
         symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
-        # performing the ADD operation
         # if both of the variables are integers
         if get_type(symb1) == "int" and get_type(symb2) == "int":
-            # performing the MUL operation
+            # performing the ADD operation
+            dest.update({instruct.args[0].name[3:]: symb1 + symb2})
+        # if both of the variables are float
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
             dest.update({instruct.args[0].name[3:]: symb1 + symb2})
         else:
             quit(53)
@@ -407,10 +418,12 @@ def sub(instruct, interpret):
         symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
-        # performing the SUB operation
         # if both of the variables are integers
         if get_type(symb1) == "int" and get_type(symb2) == "int":
-            # performing the MUL operation
+            # performing the SUB operation
+            dest.update({instruct.args[0].name[3:]: symb1 - symb2})
+        # if both of the variables are float
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
             dest.update({instruct.args[0].name[3:]: symb1 - symb2})
         else:
             quit(53)
@@ -434,6 +447,9 @@ def mul(instruct, interpret):
         # if both of the variables are integers
         if get_type(symb1) == "int" and get_type(symb2) == "int":
             # performing the MUL operation
+            dest.update({instruct.args[0].name[3:]: symb1 * symb2})
+        # if both of the variables are float
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
             dest.update({instruct.args[0].name[3:]: symb1 * symb2})
         else:
             quit(53)
@@ -462,6 +478,34 @@ def idiv(instruct, interpret):
             # performing the IDIV operation
             else:
                 dest.update({instruct.args[0].name[3:]: symb1 // symb2})
+        else:
+            quit(53)
+
+
+def div(instruct, interpret):
+    global globalFrame, tempFrame, localFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 3)
+        vars = ['var', 'symb', 'symb']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+    elif interpret == 1:
+        # loading the first symbol
+        symb1 = check_symb(instruct.args[1], False)
+        # loading the second symbol
+        symb2 = check_symb(instruct.args[2], False)
+        # loading the destination variable
+        dest = check_dest(instruct.args[0])
+        # if both of the variables are integers
+        # if both of the variables are integers
+        if get_type(symb1) == "float" and get_type(symb2) == "float":
+            # if the denominator is 0
+            if symb2 == 0:
+                quit(57)
+            # performing the IDIV operation
+            else:
+                dest.update({instruct.args[0].name[3:]: symb1 / symb2})
         else:
             quit(53)
 
@@ -717,6 +761,48 @@ def stri2int(instruct, interpret):
             quit(53)
 
 
+def int2float(instruct, interpret):
+    global globalFrame, tempFrame, localFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 2)
+        vars = ['var', 'symb']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+    elif interpret == 1:
+        # loading the symbol
+        symb = check_symb(instruct.args[1], False)
+        # loading the destination variable
+        dest = check_dest(instruct.args[0])
+        # if the symbol is an integer convert it to float
+        if get_type(symb) == "int":
+            symb = float(symb)
+            dest.update({instruct.args[0].name[3:]: symb})
+        else:
+            quit(53)
+
+
+def float2int(instruct, interpret):
+    global globalFrame, tempFrame, localFrame
+
+    if interpret == 0:
+        check_num(len(instruct.args), 2)
+        vars = ['var', 'symb']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+    elif interpret == 1:
+        # loading the symbol
+        symb = check_symb(instruct.args[1], False)
+        # loading the destination variable
+        dest = check_dest(instruct.args[0])
+        # if the symbol is a float convert it to int
+        if get_type(symb) == "float":
+            symb = int(symb)
+            dest.update({instruct.args[0].name[3:]: symb})
+        else:
+            quit(53)
+
+
 def read(instruct, interpret, input, count):
     global globalFrame, tempFrame, localFrame
 
@@ -745,6 +831,10 @@ def read(instruct, interpret, input, count):
                 symb = symb
             elif instruct.args[1].name == "string":
                 symb = ""
+            elif instruct.args[1].name == "float" and re.match(r"^[+|-]?(0x)?(\d)*.?[\d|\w]*[p[+|-]?\d*]?$", symb):
+                symb = float.fromhex(symb)
+            elif instruct.args[1].name == "float":
+                symb = "0x0.0p+0"
         else:
             if instruct.args[1].name == "int":
                 symb = 0
@@ -752,6 +842,8 @@ def read(instruct, interpret, input, count):
                 symb = False
             elif instruct.args[1].name == "string":
                 symb = ""
+            elif instruct.args[1].name == "float":
+                symb = "0x0.0p+0"
         # updating the destination with the read symbol
         dest.update({instruct.args[0].name[3:]: symb})
 
