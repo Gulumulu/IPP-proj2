@@ -3,7 +3,7 @@ import sys
 
 globalFrame = {}
 tempFrame = None
-localFrame = [{}]
+localFrame = []
 dataStack = []
 labels = {}
 returnJump = []
@@ -85,6 +85,9 @@ def print_out(text, out):
     # if the text to print is an integer
     elif isinstance(text, int):
         print(text, end='', file=file)
+    # if the text to print is nil
+    elif re.match(r"nil", text):
+        print("", end='', file=file)
     # if the text to print is a string
     else:
         i = 0
@@ -97,50 +100,56 @@ def print_out(text, out):
                 i += 1
 
 
-def check_symb(symbol):
+def check_symb(symbol, is_type_instruct):
     global globalFrame, tempFrame, localFrame
 
     if symbol.name is None:
         return set_type("")
+    # if the symbol is a GF variable but isn't in the global frame
+    elif re.match(r"^(GF@).*$", symbol.name[0:3]) and not symbol.name[3:] in globalFrame:
+        quit(54)
+    # if the symbol is a TF variable but the temporary frame doesn't exist
+    elif re.match(r"^(TF@).*$", symbol.name[0:3]) and tempFrame is None:
+        quit(55)
+    # if the symbol is a TF variable but isn't in the temporary frame
+    elif re.match(r"^(TF@).*$", symbol.name[0:3]) and not symbol.name[3:] in tempFrame:
+        quit(54)
+    # if the symbol is an LF variable but the local frame doesn't exist
+    elif re.match(r"^(LF@).*$", symbol.name[0:3]) and not localFrame:
+        quit(55)
+    # if the symbol is an LF variable but isn't in the local frame
+    elif re.match(r"^(LF@).*$", symbol.name[0:3]) and not symbol.name[3:] in localFrame[-1]:
+        quit(54)
     # if the symbol is a GF variable in the global frame return it
     elif symbol.type == "var" and re.match(r"^(GF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in globalFrame:
-        if globalFrame[symbol.name[3:]] is not None:
+        if is_type_instruct is True and globalFrame[symbol.name[3:]] is None:
+            return None
+        elif globalFrame[symbol.name[3:]] is not None:
             return globalFrame[symbol.name[3:]]
         else:
             quit(56)
     # if the symbol is a TF variable in the temporary frame return it
     elif symbol.type == "var" and re.match(r"^(TF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in tempFrame:
-        if tempFrame[symbol.name[3:]] is not None:
+        if is_type_instruct is True and tempFrame[symbol.name[3:]] is None:
+            return None
+        elif tempFrame[symbol.name[3:]] is not None:
             return tempFrame[symbol.name[3:]]
         else:
             quit(56)
     # if the symbol is an LF variable in the local frame return it
     elif symbol.type == "var" and re.match(r"^(LF@).*$", symbol.name[0:3]) \
             and symbol.name[3:] in localFrame[-1]:
-        if localFrame[-1][symbol.name[3:]] is not None:
+        if is_type_instruct is True and localFrame[-1][symbol.name[3:]] is None:
+            return None
+        elif localFrame[-1][symbol.name[3:]] is not None:
             return localFrame[-1][symbol.name[3:]]
         else:
             quit(56)
-    # if the symbol is a GF variable but isn't in the global frame
-    elif re.match(r"^(GF@).*$", symbol.name[0:3]) and not symbol.name[3:] in globalFrame:
-        quit(54)
-    # if the symbol is a TF variable but isn't in the temporary frame
-    elif re.match(r"^(TF@).*$", symbol.name[0:3]) and not symbol.name[3:] in tempFrame:
-        quit(54)
-    # if the symbol is a TF variable but the temporary frame doesn't exist
-    elif re.match(r"^(TF@).*$", symbol.name[0:3]) and not tempFrame:
-        quit(55)
-    # if the symbol is an LF variable but isn't in the local frame
-    elif re.match(r"^(LF@).*$", symbol.name[0:3]) and not symbol.name[3:] in localFrame[-1]:
-        quit(54)
-    # if the symbol is an LF variable but the local frame doesn't exist
-    elif re.match(r"^(LF@).*$", symbol.name[0:3]) and not localFrame:
-        quit(55)
     # if the symbol isn't a variable return it with the correct type
     else:
-        return set_type(symbol.name)
+        return set_type(symbol)
 
 
 def check_dest(variable):
@@ -152,43 +161,45 @@ def check_dest(variable):
     # if the variable isn't in the global frame
     elif re.match(r"^(GF@).*$", variable.name[0:3]) and not variable.name[3:] in globalFrame:
         quit(54)
+    # if the temporary frame doesn't exist
+    elif re.match(r"^(TF@).*$", variable.name[0:3]) and tempFrame is None:
+        quit(55)
     # if the variable is in the temporary frame
     elif re.match(r"^(TF@).*$", variable.name[0:3]) and variable.name[3:] in tempFrame:
         return tempFrame
-    # if the temporary frame doesn't exist
-    elif re.match(r"^(TF@).*$", variable.name[0:3]) and bool(tempFrame):
-        quit(55)
     # if the variable isn't in the temporary frame
     elif re.match(r"^(TF@).*$", variable.name[0:3]) and not variable.name[3:] in tempFrame:
         quit(54)
+    # if the local frame doesn't exist
+    elif re.match(r"^(LF@).*$", variable.name[0:3]) and len(localFrame) == 0:
+        quit(55)
     # if the variable is in the local frame
     elif re.match(r"^(LF@).*$", variable.name[0:3]) and variable.name[3:] in localFrame[-1]:
         return localFrame[-1]
-    # if the local frame doesn't exist
-    elif re.match(r"^(LF@).*$", variable.name[0:3]) and bool(localFrame):
-        quit(55)
     # if the variable isn't in the local frame
     elif re.match(r"^(LF@).*$", variable.name[0:3]) and not variable.name[3:] in localFrame[-1]:
         quit(54)
 
 
 def set_type(string):
-    if string is None:
-        return string
-    elif re.match(r"^(true)$", string.lower()):
+    if string.name is None:
+        return string.name
+    elif string.type == "bool" and re.match(r"^(true)$", string.name.lower()):
         return True
-    elif re.match(r"^(false)$", string.lower()):
+    elif string.type == "bool" and re.match(r"^(false)$", string.name.lower()):
         return False
-    elif re.match(r"^([-|+]?\d+)$", string):
-        return int(string)
-    elif re.match(r"^(nil)$", string.lower()):
-        return string.lower()
-    elif re.match(r"^(([\w]*(\\\\[0-9]{3})*)*)\S*$", string, flags=re.UNICODE):
-        return string
+    elif string.type == "int" and re.match(r"^([-|+]?\d+)$", string.name):
+        return int(string.name)
+    elif string.type == "nil" and re.match(r"^(nil)$", string.name.lower()):
+        return string.name.lower()
+    elif string.type == "string" and re.match(r"^(([\w]*(\\\\[0-9]{3})*)*)\S*$", string.name, flags=re.UNICODE):
+        return string.name
 
 
 def get_type(symbol):
-    if isinstance(symbol, bool):
+    if symbol is None:
+        return None
+    elif isinstance(symbol, bool):
         return "bool"
     elif isinstance(symbol, int):
         return "int"
@@ -196,8 +207,6 @@ def get_type(symbol):
         return "nil"
     elif isinstance(symbol, str):
         return "string"
-    elif symbol is None:
-        return None
 
 
 def move(instruct, interpret):
@@ -210,7 +219,7 @@ def move(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[1], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         dest.update({instruct.args[0].name[3:]: symb})
@@ -242,7 +251,7 @@ def pushframe(instruct, interpret):
         # add the current temporary frame to the top of the local frame stack and destroy the temporary frame
         elif not bool(tempFrame) or tempFrame:
             localFrame.append(tempFrame)
-            tempFrame.clear()
+            tempFrame = {}
             tempFrame = None
 
 
@@ -253,7 +262,7 @@ def popframe(instruct, interpret):
         check_num(len(instruct.args), 0)
     elif interpret == 1:
         # pop the top frame from the local frame stack into the temporary frame
-        if localFrame or not bool(tempFrame) or tempFrame:
+        if localFrame and (not bool(tempFrame) or tempFrame):
             tempFrame = localFrame.pop()
         # if the local frame isn't initialised
         else:
@@ -273,10 +282,10 @@ def defvar(instruct, interpret):
         if re.match(r"^(GF@).*$", instruct.args[0].name):
             globalFrame.update({instruct.args[0].name[3:]: None})
         # if the variable is supposed to be in the local stack frame
-        elif re.match(r"^(LF@).*$", instruct.args[0].name):
+        elif len(localFrame)!= 0 and re.match(r"^(LF@).*$", instruct.args[0].name):
             localFrame[-1].update({instruct.args[0].name[3:]: None})
         # if the variable is supposed to be in the temporary frame and the current frame is temporary
-        elif re.match(r"^(TF@).*$", instruct.args[0].name):
+        elif tempFrame is not None and len(tempFrame) >= 0 and re.match(r"^(TF@).*$", instruct.args[0].name):
             tempFrame.update({instruct.args[0].name[3:]: None})
         # if the variable is badly defined
         else:
@@ -300,7 +309,7 @@ def call(instruct, interpret, counter):
             return labels[instruct.args[0].name]
         # if the label doesn't exist
         else:
-            quit(56)
+            quit(52)
 
 
 def _return(instruct, interpret, counter):
@@ -315,7 +324,7 @@ def _return(instruct, interpret, counter):
             return returnJump.pop()
         # if it wasn't defined
         else:
-            quit(54)
+            quit(56)
 
 
 def pushs(instruct, interpret):
@@ -328,7 +337,7 @@ def pushs(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[0])
+        symb = check_symb(instruct.args[0], False)
         # pushing the symbol into the data stack
         dataStack.append(symb)
 
@@ -362,9 +371,9 @@ def add(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # performing the ADD operation
@@ -386,9 +395,9 @@ def sub(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # performing the SUB operation
@@ -410,9 +419,9 @@ def mul(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both of the variables are integers
@@ -433,9 +442,9 @@ def idiv(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both of the variables are integers
@@ -460,9 +469,9 @@ def lt(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are integers
@@ -500,9 +509,9 @@ def gt(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are integers
@@ -540,9 +549,9 @@ def eq(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are integers
@@ -566,6 +575,13 @@ def eq(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: True})
             else:
                 dest.update({instruct.args[0].name[3:]: False})
+        # if both symbols are bool
+        elif get_type(symb1) == "nil" or get_type(symb2) == "nil":
+            # if the comparison is true
+            if symb1 == symb2:
+                dest.update({instruct.args[0].name[3:]: True})
+            else:
+                dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
 
@@ -580,9 +596,9 @@ def _and(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are bool
@@ -606,9 +622,9 @@ def _or(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are bool
@@ -632,7 +648,7 @@ def _not(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[1], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if both symbols are bool
@@ -653,7 +669,7 @@ def int2char(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[1], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the symbol is an integer
@@ -678,15 +694,15 @@ def stri2int(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the first symbol is string and the second one is integer
         if get_type(symb1) == "string" and get_type(symb2) == "int":
             # if the integer is in the correct range
-            if 0 <= int(symb2) <= len(symb1):
+            if 0 <= symb2 < len(symb1):
                 dest.update({instruct.args[0].name[3:]: ord(symb1[symb2:symb2 + 1])})
             else:
                 quit(58)
@@ -703,8 +719,34 @@ def read(instruct, interpret, input, count):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret == 1:
+        # loading the destination variable
         dest = check_dest(instruct.args[0])
-        dest.update({instruct.args[0].name[3:]: set_type(input[count].rstrip())})
+        # if the input file is not empty
+        if bool(input):
+            symb = input[count].rstrip()
+            # determining the type of the symbol read
+            if instruct.args[1].name == "bool" and re.match(r"^(true)$", symb.lower()):
+                symb = True
+            elif instruct.args[1].name == "bool":
+                symb = False
+            elif instruct.args[1].name == "int" and re.match(r"^([-|+]?\d+)$", symb):
+                symb = int(symb)
+            elif instruct.args[1].name == "int":
+                symb = 0
+            elif instruct.args[1].name == "string" and re.match(r"^(([\w]*(\\\\[0-9]{3})*)*)\S*$", symb,
+                                                                flags=re.UNICODE):
+                symb = symb
+            elif instruct.args[1].name == "string":
+                symb = ""
+        else:
+            if instruct.args[1].name == "int":
+                symb = 0
+            elif instruct.args[1].name == "bool":
+                symb = False
+            elif instruct.args[1].name == "string":
+                symb = ""
+        # updating the destination with the read symbol
+        dest.update({instruct.args[0].name[3:]: symb})
 
 
 def write(instruct, interpret):
@@ -717,7 +759,7 @@ def write(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        value = check_symb(instruct.args[0])
+        value = check_symb(instruct.args[0], False)
         # performing the PRINT operation
         print_out(value, "std")
 
@@ -732,13 +774,16 @@ def concat(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # performing the CONCAT operation
-        dest.update({instruct.args[0].name[3:]: symb1 + symb2})
+        if get_type(symb1) == "string" and get_type(symb2) == "string":
+            dest.update({instruct.args[0].name[3:]: symb1 + symb2})
+        else:
+            quit(53)
 
 
 def strlen(instruct, interpret):
@@ -751,22 +796,26 @@ def strlen(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[1], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
-        # deal with the escape sequences in strings
-        i = 0
-        out = []
-        while i < len(symb):
-            if symb[i] == "\\":
-                out.append(chr(int(symb[i + 2:i + 4])))
-                i += 4
-            else:
-                out.append(symb[i])
-                i += 1
-        symb = ''.join(out)
-        # performs the STRLEN function
-        dest.update({instruct.args[0].name[3:]: len(symb)})
+        # if the symbol is a string
+        if get_type(symb) == "string":
+            # deal with the escape sequences in strings
+            i = 0
+            out = []
+            while i < len(symb):
+                if symb[i] == "\\":
+                    out.append(chr(int(symb[i + 2:i + 4])))
+                    i += 4
+                else:
+                    out.append(symb[i])
+                    i += 1
+            symb = ''.join(out)
+            # performs the STRLEN function
+            dest.update({instruct.args[0].name[3:]: len(symb)})
+        else:
+            quit(53)
 
 
 def getchar(instruct, interpret):
@@ -779,9 +828,9 @@ def getchar(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the first symbol is a string and the second symbol is an integer
@@ -805,17 +854,18 @@ def setchar(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the first symbol is a string and the second symbol is an integer
         if get_type(symb1) == "int" and get_type(symb2) == "string" and get_type(dest[instruct.args[0].name[3:]]) == "string":
             # if the index isn't outside of the string performs the SETCHAR operation
-            if 0 <= int(symb1) < len(dest[instruct.args[0].name[3:]]):
-                tmp = dest[instruct.args[0].name[3:]]
-                new = "".join((tmp[int(symb1)], symb2[0:1], tmp[int(symb1)]))
+            if 0 <= symb1 < len(dest[instruct.args[0].name[3:]]) and symb2 != "":
+                tmp = list(dest[instruct.args[0].name[3:]])
+                tmp[symb1] = symb2[0:1]
+                new = "".join(tmp)
                 dest.update({instruct.args[0].name[3:]: new})
             else:
                 quit(58)
@@ -833,7 +883,7 @@ def type(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the first symbol
-        symb = check_symb(instruct.args[1])
+        symb = check_symb(instruct.args[1], True)
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         # if the type of the symbol is None set the variable to empty string
@@ -887,9 +937,9 @@ def jumpifeq(instruct, interpret, counter):
         return counter
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # if the symbols are both strings
         if get_type(symb1) == "string" and get_type(symb2) == "string":
             # if the label exists and equality is satisfied jump to it
@@ -945,9 +995,9 @@ def jumpifnoteq(instruct, interpret, counter):
         return counter
     elif interpret == 1:
         # loading the first symbol
-        symb1 = check_symb(instruct.args[1])
+        symb1 = check_symb(instruct.args[1], False)
         # loading the second symbol
-        symb2 = check_symb(instruct.args[2])
+        symb2 = check_symb(instruct.args[2], False)
         # if the symbols are both strings
         if get_type(symb1) == "string" and get_type(symb2) == "string":
             # if the label exists and equality is satisfied jump to it
@@ -1004,7 +1054,7 @@ def _exit(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the exit code
-        code = check_symb(instruct.args[0])
+        code = check_symb(instruct.args[0], False)
         # if the symbol is an integer
         if get_type(code) == "int":
             # if the symbol is in the correct range
@@ -1027,7 +1077,7 @@ def dprint(instruct, interpret):
         check_data(instruct.args)
     elif interpret == 1:
         # loading the symbol
-        symb = check_symb(instruct.args[0])
+        symb = check_symb(instruct.args[0], False)
         # performing the PRINT operation
         print_out(symb, "err")
 

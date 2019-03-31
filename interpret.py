@@ -32,6 +32,8 @@ class Argument:
     def __init__(self, num, type, name=None):
         self.num = num
         self.type = type
+        if name is None:
+            name = ""
         self.name = name.replace("\n", "")
 
 
@@ -112,28 +114,35 @@ def check_xml():
             if re.match(r"^name$", name) or re.match(r"^description$", name):
                 continue
             else:
-                exit(31)
+                exit(32)
 
     # checking if the elements have correct name = instruction
     for instruct in root:
         if not re.match(r"^instruction$", instruct.tag):
-            exit(31)
+            exit(32)
         # checking if the attributes of the instruction elements have correct names
         for name, value in instruct.attrib.items():
             if (not re.match(r"^order$", name) or not value.isnumeric()) and (not re.match(r"^opcode$", name)):
-                exit(31)
+                exit(32)
 
     # creating classes of instruction elements and their arguments
     for instruct in root.findall('instruction'):
+        # checking if there are any elements other than arg within the instriction element
+        for argument in instruct:
+            if not re.match("^arg[1|2|3]$", argument.tag):
+                exit(32)
         x = 0
         arg1 = instruct.findall('arg1')
         arg2 = instruct.findall('arg2')
         arg3 = instruct.findall('arg3')
         for arg in arg1 + arg2 + arg3:
+            # checking for unwanted elements within the arg element
+            for anything in arg:
+                exit(32)
             # checking if the attribute of the arg elements has the correct name
             for name, value in arg.attrib.items():
                 if not re.match(r"^type$", name):
-                    exit(31)
+                    exit(32)
             x += 1
             argument_list.append(Argument(x, arg.get('type'), arg.text))
         instruction_list.append(Instruction(instruct.get('order'), instruct.get('opcode'), argument_list))
