@@ -95,22 +95,28 @@ def check_xml():
 
     # checks if the program element has the language attribute with the IPPcode19 value
     for name, value in root.attrib.items():
-        if re.match(r"^language$", name) and re.match(r"^IPPcode19$", value):
-            continue
-        else:
-            if re.match(r"^name$", name) or re.match(r"^description$", name):
+        if root.text is None or re.match(r"^\n*\s*$", root.text):
+            if re.match(r"^language$", name) and re.match(r"^IPPcode19$", value):
                 continue
             else:
-                exit(32)
+                if re.match(r"^name$", name) or re.match(r"^description$", name):
+                    continue
+                else:
+                    exit(32)
+        else:
+            exit(32)
 
     # checking if the elements have correct name = instruction
     for instruct in root:
         if not re.match(r"^instruction$", instruct.tag):
             exit(32)
-        # checking if the attributes of the instruction elements have correct names
-        for name, value in instruct.attrib.items():
-            if (not re.match(r"^order$", name) or not value.isnumeric()) and (not re.match(r"^opcode$", name)):
-                exit(32)
+        if re.match(r"^\n*\s*$", instruct.tail) and (instruct.text is None or re.match(r"^\n*\s*$", instruct.text)):
+            # checking if the attributes of the instruction elements have correct names
+            for name, value in instruct.attrib.items():
+                if (not re.match(r"^order$", name) or not value.isnumeric()) and (not re.match(r"^opcode$", name)):
+                    exit(32)
+        else:
+            exit(32)
 
     # creating classes of instruction elements and their arguments
     for instruct in root.findall('instruction'):
@@ -118,6 +124,8 @@ def check_xml():
         for argument in instruct:
             if not re.match("^arg[1|2|3]$", argument.tag):
                 exit(32)
+            if not re.match(r"^\n*\s*$", argument.tail):
+                quit(32)
         x = 0
         arg1 = instruct.findall('arg1')
         arg2 = instruct.findall('arg2')

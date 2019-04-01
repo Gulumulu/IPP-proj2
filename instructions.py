@@ -14,7 +14,6 @@ returnJump = []
 
 ESC sequences after READ instruct
 NIL output after TYPE
-mistakes in XML
 '''
 
 
@@ -643,6 +642,12 @@ def lt(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: True})
             else:
                 dest.update({instruct.args[0].name[3:]: False})
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
+            # if the comparison is true
+            if symb1 < symb2:
+                dest.update({instruct.args[0].name[3:]: True})
+            else:
+                dest.update({instruct.args[0].name[3:]: False})
         # if both symbols are strings
         elif get_type(symb1) == "string" and get_type(symb2) == "string":
             # if the comparison is true
@@ -690,6 +695,12 @@ def gt(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: True})
             else:
                 dest.update({instruct.args[0].name[3:]: False})
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
+            # if the comparison is true
+            if symb1 > symb2:
+                dest.update({instruct.args[0].name[3:]: True})
+            else:
+                dest.update({instruct.args[0].name[3:]: False})
         # if both symbols are strings
         elif get_type(symb1) == "string" and get_type(symb2) == "string":
             # if the comparison is true
@@ -732,6 +743,13 @@ def eq(instruct, interpret):
         dest = check_dest(instruct.args[0])
         # if both symbols are integers
         if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the comparison is true
+            if symb1 == symb2:
+                dest.update({instruct.args[0].name[3:]: True})
+            else:
+                dest.update({instruct.args[0].name[3:]: False})
+                # if both symbols are integers
+        elif get_type(symb1) == "float" and get_type(symb2) == "float":
             # if the comparison is true
             if symb1 == symb2:
                 dest.update({instruct.args[0].name[3:]: True})
@@ -1465,7 +1483,7 @@ def clears(instruct, interpret):
 
 
 def adds(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1498,7 +1516,7 @@ def adds(instruct, interpret):
 
 
 def subs(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1531,7 +1549,7 @@ def subs(instruct, interpret):
 
 
 def muls(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1564,7 +1582,7 @@ def muls(instruct, interpret):
 
 
 def idivs(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1600,7 +1618,7 @@ def idivs(instruct, interpret):
 
 
 def lts(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1650,7 +1668,7 @@ def lts(instruct, interpret):
 
 
 def gts(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1700,7 +1718,7 @@ def gts(instruct, interpret):
 
 
 def eqs(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1757,7 +1775,7 @@ def eqs(instruct, interpret):
 
 
 def ands(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1793,7 +1811,7 @@ def ands(instruct, interpret):
 
 
 def ors(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1829,7 +1847,7 @@ def ors(instruct, interpret):
 
 
 def nots(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1859,7 +1877,7 @@ def nots(instruct, interpret):
 
 
 def int2chars(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
@@ -1890,7 +1908,7 @@ def int2chars(instruct, interpret):
 
 
 def stri2ints(instruct, interpret):
-    global dataStack, globalFrame, tempFrame, localFrame
+    global dataStack
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 0)
