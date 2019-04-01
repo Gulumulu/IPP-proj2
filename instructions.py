@@ -7,12 +7,12 @@ localFrame = []
 dataStack = []
 labels = {}
 returnJump = []
+read_input = []
 
 
 '''
 !!!!TODO!!!!!
 
-ESC sequences after READ instruct
 NIL output after TYPE
 '''
 
@@ -78,6 +78,8 @@ def check_data(args):
 
 # prints the data to a defined output media
 def print_out(text, out):
+    global read_input
+
     # if the DPRINT or BREAK instruction is called print to stderr
     if out == "err":
         file = sys.stderr
@@ -103,14 +105,18 @@ def print_out(text, out):
         print("", end='', file=file)
     # if the text to print is a string
     else:
-        i = 0
-        while i < len(text):
-            if text[i] == "\\":
-                print(chr(int(text[i+2:i+4])), end='', file=file)
-                i += 4
-            else:
-                print(text[i], end='', file=file)
-                i += 1
+        # if the string was loaded through the READ instruction
+        if bool(read_input) and str(text) in read_input:
+            print(text, end='', file=file)
+        else:
+            i = 0
+            while i < len(text):
+                if text[i] == "\\":
+                    print(chr(int(text[i+2:i+4])), end='', file=file)
+                    i += 4
+                else:
+                    print(text[i], end='', file=file)
+                    i += 1
 
 
 def check_symb(symbol, is_type_instruct):
@@ -1001,7 +1007,7 @@ def float2int(instruct, interpret):
 
 
 def read(instruct, interpret, input, count):
-    global globalFrame, tempFrame, localFrame
+    global globalFrame, tempFrame, localFrame,read_input
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 2)
@@ -1009,6 +1015,7 @@ def read(instruct, interpret, input, count):
         check_vars(vars, instruct.args)
         check_data(instruct.args)
     elif interpret[0] == 1:
+        read_input = input
         # add one to the number of instructions run
         interpret[1] += 1
         # loading the destination variable
@@ -1104,7 +1111,7 @@ def concat(instruct, interpret):
 
 
 def strlen(instruct, interpret):
-    global globalFrame, tempFrame, localFrame
+    global globalFrame, tempFrame, localFrame, read_input
 
     if interpret[0] == 0:
         check_num(len(instruct.args), 2)
@@ -1120,19 +1127,23 @@ def strlen(instruct, interpret):
         dest = check_dest(instruct.args[0])
         # if the symbol is a string
         if get_type(symb) == "string":
-            # deal with the escape sequences in strings
-            i = 0
-            out = []
-            while i < len(symb):
-                if symb[i] == "\\":
-                    out.append(chr(int(symb[i + 2:i + 4])))
-                    i += 4
-                else:
-                    out.append(symb[i])
-                    i += 1
-            symb = ''.join(out)
-            # performs the STRLEN function
-            dest.update({instruct.args[0].name[3:]: len(symb)})
+            # if the string was loaded through the READ instruction
+            if bool(read_input) and str(symb) in read_input:
+                dest.update({instruct.args[0].name[3:]: len(symb)})
+            else:
+                # deal with the escape sequences in strings
+                i = 0
+                out = []
+                while i < len(symb):
+                    if symb[i] == "\\":
+                        out.append(chr(int(symb[i + 2:i + 4])))
+                        i += 4
+                    else:
+                        out.append(symb[i])
+                        i += 1
+                symb = ''.join(out)
+                # performs the STRLEN function
+                dest.update({instruct.args[0].name[3:]: len(symb)})
         else:
             quit(53)
         # find out how many variables are initialized
