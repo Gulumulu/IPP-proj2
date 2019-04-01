@@ -240,12 +240,43 @@ def parse_instruction(mode):
             INSTR.dprint(instruct, helper)
         elif re.match(r"^BREAK$", instruct.opcode):
             INSTR._break(instruct, helper, counter)
+        elif re.match(r"^CLEARS$", instruct.opcode):
+            INSTR.clears(instruct, helper)
+        elif re.match(r"^ADDS$", instruct.opcode):
+            INSTR.adds(instruct, helper)
+        elif re.match(r"^SUBS$", instruct.opcode):
+            INSTR.subs(instruct, helper)
+        elif re.match(r"^MULS$", instruct.opcode):
+            INSTR.muls(instruct, helper)
+        elif re.match(r"^IDIVS$", instruct.opcode):
+            INSTR.idivs(instruct, helper)
+        elif re.match(r"^LTS$", instruct.opcode):
+            INSTR.lts(instruct, helper)
+        elif re.match(r"^GTS$", instruct.opcode):
+            INSTR.gts(instruct, helper)
+        elif re.match(r"^EQS$", instruct.opcode):
+            INSTR.eqs(instruct, helper)
+        elif re.match(r"^ANDS$", instruct.opcode):
+            INSTR.ands(instruct, helper)
+        elif re.match(r"^ORS$", instruct.opcode):
+            INSTR.ors(instruct, helper)
+        elif re.match(r"^NOTS$", instruct.opcode):
+            INSTR.nots(instruct, helper)
+        elif re.match(r"^INT2CHARS$", instruct.opcode):
+            INSTR.int2chars(instruct, helper)
+        elif re.match(r"^STRI2INTS$", instruct.opcode):
+            INSTR.stri2ints(instruct, helper)
+        elif re.match(r"^JUMPIFEQS$", instruct.opcode):
+            counter = INSTR.jumpifeqs(instruct, helper, counter)
+        elif re.match(r"^JUMPIFNEQS$", instruct.opcode):
+            counter = INSTR.jumpifnoteqs(instruct, helper, counter)
         else:
             # mistake in instruction name
             exit(32)
         counter += 1
 
     insts_num = helper[1]
+    vars_num = helper[2]
 
 
 # function for parsing the xml input

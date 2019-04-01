@@ -14,8 +14,6 @@ returnJump = []
 
 ESC sequences after READ instruct
 NIL output after TYPE
-max number of VARS in frames
-STACK FUNCTIONS
 mistakes in XML
 '''
 
@@ -229,6 +227,30 @@ def get_type(symbol):
         return "string"
 
 
+def count_vars():
+    global globalFrame, tempFrame, localFrame, dataStack
+
+    var_num = 0
+
+    for var in globalFrame:
+        if globalFrame[var] is not None:
+            var_num += 1
+    if tempFrame is not None:
+        for var in tempFrame:
+            if tempFrame[var] is not None:
+                var_num += 1
+    if localFrame is not None:
+        for frame in localFrame:
+            for var in frame:
+                if frame[var] is not None:
+                    var_num += 1
+    if dataStack is not None:
+        for var in dataStack:
+            if var is not None:
+                var_num += 1
+    return var_num
+
+
 def move(instruct, interpret):
     global globalFrame, tempFrame, localFrame
 
@@ -245,6 +267,11 @@ def move(instruct, interpret):
         # loading the destination variable
         dest = check_dest(instruct.args[0])
         dest.update({instruct.args[0].name[3:]: symb})
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def createframe(instruct, interpret):
@@ -261,6 +288,11 @@ def createframe(instruct, interpret):
         # if it was already initialised
         else:
             tempFrame.clear()
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def pushframe(instruct, interpret):
@@ -279,6 +311,11 @@ def pushframe(instruct, interpret):
             localFrame.append(tempFrame)
             tempFrame = {}
             tempFrame = None
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def popframe(instruct, interpret):
@@ -295,6 +332,11 @@ def popframe(instruct, interpret):
         # if the local frame isn't initialised
         else:
             quit(55)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def defvar(instruct, interpret):
@@ -376,6 +418,11 @@ def pushs(instruct, interpret):
         symb = check_symb(instruct.args[0], False)
         # pushing the symbol into the data stack
         dataStack.append(symb)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def pops(instruct, interpret):
@@ -397,6 +444,11 @@ def pops(instruct, interpret):
         # if the data stack is empty
         else:
             quit(56)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def add(instruct, interpret):
@@ -425,6 +477,11 @@ def add(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb1 + symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def sub(instruct, interpret):
@@ -453,6 +510,11 @@ def sub(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb1 - symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def mul(instruct, interpret):
@@ -481,6 +543,11 @@ def mul(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb1 * symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def idiv(instruct, interpret):
@@ -510,6 +577,11 @@ def idiv(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: symb1 // symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def div(instruct, interpret):
@@ -540,6 +612,11 @@ def div(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: symb1 / symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def lt(instruct, interpret):
@@ -582,6 +659,11 @@ def lt(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def gt(instruct, interpret):
@@ -624,6 +706,11 @@ def gt(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def eq(instruct, interpret):
@@ -673,6 +760,11 @@ def eq(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def _and(instruct, interpret):
@@ -701,6 +793,11 @@ def _and(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def _or(instruct, interpret):
@@ -729,6 +826,11 @@ def _or(instruct, interpret):
                 dest.update({instruct.args[0].name[3:]: False})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def _not(instruct, interpret):
@@ -752,6 +854,11 @@ def _not(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: not symb})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def int2char(instruct, interpret):
@@ -779,6 +886,11 @@ def int2char(instruct, interpret):
                 quit(58)
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def stri2int(instruct, interpret):
@@ -807,6 +919,11 @@ def stri2int(instruct, interpret):
                 quit(58)
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def int2float(instruct, interpret):
@@ -830,6 +947,11 @@ def int2float(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def float2int(instruct, interpret):
@@ -853,6 +975,11 @@ def float2int(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def read(instruct, interpret, input, count):
@@ -900,6 +1027,11 @@ def read(instruct, interpret, input, count):
                 symb = "0x0.0p+0"
         # updating the destination with the read symbol
         dest.update({instruct.args[0].name[3:]: symb})
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def write(instruct, interpret):
@@ -917,6 +1049,11 @@ def write(instruct, interpret):
         value = check_symb(instruct.args[0], False)
         # performing the PRINT operation
         print_out(value, "std")
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def concat(instruct, interpret):
@@ -941,6 +1078,11 @@ def concat(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: symb1 + symb2})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def strlen(instruct, interpret):
@@ -975,6 +1117,11 @@ def strlen(instruct, interpret):
             dest.update({instruct.args[0].name[3:]: len(symb)})
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def getchar(instruct, interpret):
@@ -1003,6 +1150,11 @@ def getchar(instruct, interpret):
                 quit(58)
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def setchar(instruct, interpret):
@@ -1034,6 +1186,11 @@ def setchar(instruct, interpret):
                 quit(58)
         else:
             quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def type(instruct, interpret):
@@ -1057,6 +1214,11 @@ def type(instruct, interpret):
         # set the variable to the name of the type of the symbol
         else:
             dest.update({instruct.args[0].name[3:]: get_type(symb)})
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
 
 
 def label(instruct, interpret, counter):
@@ -1080,6 +1242,8 @@ def label(instruct, interpret, counter):
 
 
 def jump(instruct, interpret, counter):
+    global labels
+
     if interpret[0] == 0:
         check_num(len(instruct.args), 1)
         vars = ['label']
@@ -1098,6 +1262,8 @@ def jump(instruct, interpret, counter):
 
 
 def jumpifeq(instruct, interpret, counter):
+    global labels
+
     if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['label', 'symb', 'symb']
@@ -1158,6 +1324,8 @@ def jumpifeq(instruct, interpret, counter):
 
 
 def jumpifnoteq(instruct, interpret, counter):
+    global labels
+
     if interpret[0] == 0:
         check_num(len(instruct.args), 3)
         vars = ['label', 'symb', 'symb']
@@ -1284,3 +1452,614 @@ def _break(instruct, interpret, counter):
             print_out(tempFrame, "err")
         else:
             print_out("empty\n", "err")
+
+
+def clears(instruct, interpret):
+    global dataStack
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # clearing the datastack
+        dataStack = []
+
+
+def adds(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both of the variables are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # performing the ADD operation
+            dataStack.append(symb1 + symb2)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def subs(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both of the variables are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # performing the SUB operation
+            dataStack.append(symb1 - symb2)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def muls(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both of the variables are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # performing the MUL operation
+            dataStack.append(symb1 * symb2)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def idivs(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both of the variables are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            if symb2 != 0:
+                # performing the IDIV operation
+                dataStack.append(symb1 // symb2)
+            else:
+                quit(58)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def lts(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the comparison is true
+            if symb1 < symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are strings
+        elif get_type(symb1) == "string" and get_type(symb2) == "string":
+            # if the comparison is true
+            if symb1 < symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are bool
+        elif get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the comparison is true
+            if symb1 < symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def gts(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the comparison is true
+            if symb1 > symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are strings
+        elif get_type(symb1) == "string" and get_type(symb2) == "string":
+            # if the comparison is true
+            if symb1 > symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are bool
+        elif get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the comparison is true
+            if symb1 > symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def eqs(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are integers
+        if get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the comparison is true
+            if symb1 == symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are strings
+        elif get_type(symb1) == "string" and get_type(symb2) == "string":
+            # if the comparison is true
+            if symb1 == symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are bool
+        elif get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the comparison is true
+            if symb1 == symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        # if both symbols are nil
+        elif get_type(symb1) == "nil" or get_type(symb2) == "nil":
+            # if the comparison is true
+            if symb1 == symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def ands(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are bool
+        if get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the comparison is true
+            if symb1 and symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def ors(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are bool
+        if get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the comparison is true
+            if symb1 or symb2:
+                dataStack.append(True)
+            else:
+                dataStack.append(False)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def nots(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb = None
+        # loading the symbol
+        if bool(dataStack):
+            symb = dataStack.pop()
+        else:
+            quit(54)
+        # if both symbols are bool
+        if get_type(symb) == "bool":
+            # if the symbol is true
+            if symb:
+                dataStack.append(False)
+            else:
+                dataStack.append(True)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def int2chars(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb = None
+        # loading the symbol
+        if bool(dataStack):
+            symb = dataStack.pop()
+        else:
+            quit(54)
+        # if the symbol is an integer
+        if get_type(symb) == "int":
+            # if the symbol is in the correct range
+            if 0 <= symb <= 1114111:
+                dataStack.append(chr(symb))
+            # if the symbol isn't in the correct range
+            else:
+                quit(58)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def stri2ints(instruct, interpret):
+    global dataStack, globalFrame, tempFrame, localFrame
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 0)
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if the first symbol is string and the second one is integer
+        if get_type(symb1) == "string" and get_type(symb2) == "int":
+            # if the integer is in the correct range
+            if 0 <= symb2 < len(symb1):
+                dataStack.append(ord(symb1[symb2:symb2 + 1]))
+            else:
+                quit(58)
+        else:
+            quit(53)
+        # find out how many variables are initialized
+        var_num = count_vars()
+        # if the current number of initialized variables is greater than the previously calculated value replace it
+        if var_num > interpret[2]:
+            interpret[2] = var_num
+
+
+def jumpifeqs(instruct, interpret, counter):
+    global dataStack, labels
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 1)
+        vars = ['label']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+        return counter
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if the symbols are both strings
+        if get_type(symb1) == "string" and get_type(symb2) == "string":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 == symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 != symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both integers
+        elif get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 == symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 != symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both bools
+        elif get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 == symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 != symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both nils
+        elif get_type(symb1) == "nil" and get_type(symb2) == "nil":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels:
+                return labels[instruct.args[0].name]
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are different types
+        else:
+            quit(53)
+
+
+def jumpifnoteqs(instruct, interpret, counter):
+    global dataStack, labels
+
+    if interpret[0] == 0:
+        check_num(len(instruct.args), 1)
+        vars = ['label']
+        check_vars(vars, instruct.args)
+        check_data(instruct.args)
+        return counter
+    elif interpret[0] == 1:
+        # add one to the number of instructions run
+        interpret[1] += 1
+        symb1 = None
+        symb2 = None
+        # loading the first symbol
+        if bool(dataStack):
+            symb2 = dataStack.pop()
+        else:
+            quit(54)
+        # loading the second symbol
+        if bool(dataStack):
+            symb1 = dataStack.pop()
+        else:
+            quit(54)
+        # if the symbols are both strings
+        if get_type(symb1) == "string" and get_type(symb2) == "string":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 != symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 == symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both integers
+        elif get_type(symb1) == "int" and get_type(symb2) == "int":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 != symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 == symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both bools
+        elif get_type(symb1) == "bool" and get_type(symb2) == "bool":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels and symb1 != symb2:
+                return labels[instruct.args[0].name]
+            # if the equality is not satisfied
+            elif symb1 == symb2:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are both nils
+        elif get_type(symb1) == "nil" and get_type(symb2) == "nil":
+            # if the label exists and equality is satisfied jump to it
+            if instruct.args[0].name in labels:
+                return counter
+            # if the label doesn't exist
+            else:
+                quit(56)
+        # if the symbols are different types
+        else:
+            quit(53)
